@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="3.5" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{DE9B8E16-7D0B-42C1-809B-0F47558C0F3A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>AddInHelpers</RootNamespace>
+    <AssemblyName>AddInHelpers</AssemblyName>
+    <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+    <SccProjectName>SAK</SccProjectName>
+    <SccLocalPath>SAK</SccLocalPath>
+    <SccAuxPath>SAK</SccAuxPath>
+    <SccProvider>SAK</SccProvider>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Myriax.Eonfusion.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0bd27b1bb5e51c2d, processorArchitecture=MSIL">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Myriax.Eonfusion.API.Helpers, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Coordinate.cs" />
+    <Compile Include="PolygonTriangulator.cs" />
+    <Compile Include="RasterHelper.cs" />
+    <Compile Include="TestCellRaster.cs" />
+    <Compile Include="TestCellRaster.Designer.cs">
+      <DependentUpon>TestCellRaster.cs</DependentUpon>
+    </Compile>
+    <Compile Include="TestPolygonTriangulator.cs" />
+    <Compile Include="TestRasterHelper.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestVectors.cs" />
+    <Compile Include="TestVectors.Designer.cs">
+      <DependentUpon>TestVectors.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Transform.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- Eonfusion Customisations -->
+  <PropertyGroup>
+    <AddInPath>$(Registry:HKEY_CURRENT_USER\SOFTWARE\Myriax\Eonfusion@AddInPath)</AddInPath>
+    <AddInDebugger>$(Registry:HKEY_CURRENT_USER\SOFTWARE\Myriax\Eonfusion@AddInDebugger)</AddInDebugger>
+    <StartAction>Program</StartAction>
+    <StartProgram>$(AddInDebugger)</StartProgram>
+    <LibraryManifestFile>$(OutDir)\Library.manifest</LibraryManifestFile>
+  </PropertyGroup>
+  <Target Name="BeforeBuild">
+    <Error Condition=" '$(AddInDebugger)' == '' " Text="The Add-in Debugger could not be located. Please check to make sure that you have installed the Add-in Developer Tool-kit." />
+  </Target>
+  <Target Name="BeforeRebuild">
+    <Exec Command="rmdir /q /s &quot;$(AddInPath)\$(ProjectName)&quot;" WorkingDirectory="$(SolutionRoot)" ContinueOnError="false" />
+  </Target>
+  <Target Name="BeforeClean">
+    <Exec Command="rmdir /q /s &quot;$(AddInPath)\$(ProjectName)&quot;" WorkingDirectory="$(SolutionRoot)" ContinueOnError="false" />
+  </Target>
+  <Target Name="AfterBuild">
+    <WriteLinesToFile File="$(LibraryManifestFile)" Lines="Name: $(TargetFileName)" Overwrite="true" />
+    <WriteLinesToFile File="$(LibraryManifestFile)" Lines="ProjectFileName: $(ProjectFileName)" Overwrite="false" />
+    <WriteLinesToFile File="$(LibraryManifestFile)" Lines="ProjectDir: $(ProjectDir)" Overwrite="false" />
+    <WriteLinesToFile File="$(LibraryManifestFile)" Lines="DirExclusionList: bin%3Bobj%3B" Overwrite="false" />
+    <WriteLinesToFile File="$(LibraryManifestFile)" Lines="FileExclusionList: *.pdb%3B*.user%3B*.suo%3B" Overwrite="false" />
+    <Exec Command="xcopy &quot;$(TargetDir)*.*&quot; &quot;$(AddInPath)\$(ProjectName)&quot; /s /y /i" WorkingDirectory="$(SolutionRoot)" ContinueOnError="false" />
+  </Target>
+  <!--/Eonfusion Customisations -->
+</Project>
