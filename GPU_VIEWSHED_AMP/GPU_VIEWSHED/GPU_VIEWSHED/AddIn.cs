@@ -1031,7 +1031,7 @@ namespace GPU_VIEWSHED
 
         public string Name
         {
-            get { return "Viewshed GPU - New"; }
+            get { return "Viewshed GPU Repository"; }
         }
 
         public string Category

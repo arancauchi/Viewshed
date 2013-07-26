@@ -20,10 +20,8 @@
 
 using namespace concurrency;
 
-
-
-//extern "C" __declspec ( dllexport ) 
-	void calcGPU(float* zArray, int zArrayLengthX, int zArrayLengthY, int* visibleArray, int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ, int rasterWidth, int rasterHeight)
+ 
+	void calcDDA(float* zArray, int zArrayLengthX, int zArrayLengthY, int* visibleArray, int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ, int rasterWidth, int rasterHeight)
 {
 	accelerator device(accelerator::default_accelerator);
 	accelerator_view av = device.default_view;
@@ -34,13 +32,11 @@ using namespace concurrency;
 	array_view<int,2> dataViewVisible(visibleArrayY, visibleArrayX, &visibleArray[0,0]);
 	dataViewVisible.discard_data();
     // Run code on the GPU
-	//Try using amp restricted functions instead of two parallel loops
-	int i = 0;
+
 	
 	//Use while loop to determine path
-	while( i < 20)
-	{
-		if( i < 10)
+
+
 		parallel_for_each(av, eY, [=] (index<1> idx) restrict(amp)
     {
 		
@@ -89,14 +85,7 @@ using namespace concurrency;
             xIncrement = dx / (float)steps;
             yIncrement = dy / (float)steps;
 
-			
 
-            //Check distance to destiantion point
-            float finalDist = fast_math::sqrt((destX - currX) * (destX - currX) + (destY - currY) * (destY - currY));
-
-            //Check elevation to destination point
-            float finalElev = (dataViewZ[(int)destY][(int)destX] - currZ) / finalDist;
-            finalElev += 90;//rotate the angle of the elevation calculations away fro -0, 0 to 90 degrees
 
             //traverse through the line step by step
             for (int k = 0; k < steps; k++)
@@ -113,7 +102,7 @@ using namespace concurrency;
                     float elev = (dataViewZ[(int)y][(int)x] - currZ) / dist;
 
                     //elevation check
-                    if (elev <= finalElev && elev >= highest)
+                    if (elev >= highest)
                     {
                         dataViewVisible[(int)fast_math::round(y)][(int)fast_math::round(x)] = 1;
                         highest = elev;
@@ -125,7 +114,7 @@ using namespace concurrency;
 		
 	});
 		
-		if(i > 9)
+
 		parallel_for_each(av, eX, [=] (index<1> idx) restrict(amp)
     {
 		
@@ -174,14 +163,7 @@ using namespace concurrency;
             xIncrement = dx / (float)steps;
             yIncrement = dy / (float)steps;
 
-			
-
-            //Check distance to destiantion point
-            float finalDist = fast_math::sqrt((destX - currX) * (destX - currX) + (destY - currY) * (destY - currY));
-
-            //Check elevation to destination point
-            float finalElev = (dataViewZ[(int)destY][(int)destX] - currZ) / finalDist;
-            finalElev += 90;//rotate the angle of the elevation calculations away fro -0, 0 to 90 degrees
+		
 
             //traverse through the line step by step
             for (int k = 0; k < steps; k++)
@@ -198,7 +180,7 @@ using namespace concurrency;
                     float elev = (dataViewZ[(int)y][(int)x] - currZ) / dist;
 
                     //elevation check
-                    if (elev <= finalElev && elev >= highest)
+                    if (elev >= highest)
                     {
                         dataViewVisible[(int)fast_math::round(y)][(int)fast_math::round(x)] = 1;
                         highest = elev;
@@ -210,29 +192,11 @@ using namespace concurrency;
 		
 	});
 		
-		i++;
-	}
-	
-    // Copy data from GPU to CPU
-	//dataViewVisible.synchronize();
-
 
 
 }
-	////////////////////
-	/* BUGS STILL PRESENT
-	/////////////////////
-	I'm pretty sure the preCalculateDDA is not working correctly so when those values get to the GPU, xdraw viewshed is warped
 
-	////////////////
-	/* THINGS TO DO
-	///////////////
 	
-	//Try and figure out the lerped values for each octant.... (it's getting ridiculous nao :P)
-
-	Move preCalculateDDA to GPU as this will be the main  subdivision operation called before the octant calculations are dispatched
-
-	*/
 
 void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY, 
 			   int* visibleArray, int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ,
@@ -290,12 +254,12 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float losMax = fast_math::fmaxf(leftLos, rightLos);
 				float losMin = fast_math::fminf(leftLos, rightLos);
 
-				float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interY) - (x1 - x2) * ((currX - interY)  - (currY * interX))) /
-					((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
+				//float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interX)) - (x1 - x2) * ((currX * interY)  - (currY * interX)) /
+				//	((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
 
-				float lerpLOS =  (rightLos - losLerpX) * fast_math::fabsf(leftLos-rightLos);
+				//float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
 
-				//float lerpLOS = (losMin + (leftLos + rightLos) / 2)/2;
+				float lerpLOS = (losMin + losMax) / 2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -627,11 +591,14 @@ int rasterWidth, int rasterHeight, float* losArray)
 {
 
 
-		//calcGPU(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
+		calcDDA(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
+			visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight);
+
+		//calcR3(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
 		//	visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight);
 
-		calcXdraw(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
-		visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight, losArray);
+		//calcXdraw(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
+		//	visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight, losArray);
 
 		
 }
