@@ -216,7 +216,7 @@ namespace GPU_VIEWSHED
             //callR3();
             //callR2();
             
-            callGPU(currX, currY, currZ, "R3");
+            callGPU(currX, currY, currZ, "XDRAW");
 
             //t.Join();//needs join as the code will send back results without it
             stopwatch.Stop();
@@ -458,7 +458,7 @@ namespace GPU_VIEWSHED
 
                 
                 //elevation check
-                if (elev >= highest)
+                if (elev > highest)
                 {
                     visibleArrayInt[(int)Math.Round(y), (int)Math.Round(x)] = 2;
                     highest = elev;

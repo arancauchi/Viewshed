@@ -469,6 +469,8 @@ using namespace concurrency;
 
 	
 
+
+
 void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY, 
 			   int* visibleArray, int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ,
 			   int rasterWidth, int rasterHeight, float* losArray)
