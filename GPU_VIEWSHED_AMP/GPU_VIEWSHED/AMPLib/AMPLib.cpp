@@ -16,6 +16,10 @@
 #define EAST_SOUTH_EAST_COUNTER 1
 #define WEST_SOUTH_WEST_COUNTER 1
 
+#define XDRAW 1
+#define SDRAW 2
+#define DDA 3
+
 
 
 using namespace concurrency;
@@ -259,7 +263,9 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				//float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
 
-				float lerpLOS = (losMin + losMax) / 2;
+				float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+
+				float lerpLOS = (losMin + (leftLos + rightLos) / 2)/2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -267,7 +273,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 			
 				if(e > lerpLOS)
 				{
-					dataViewVisible(interY, interX) = 1;
+					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
 				}
 				else
@@ -276,7 +282,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				}
 			}
 			
-			else if(idx[0] > northNorthEastCounter && idx[0] <= northNorthEastCounter+northNorthWestCounter)//NNW
+			else if(idx[0] >= northNorthEastCounter && idx[0] <= northNorthEastCounter+northNorthWestCounter)//NNW
 			{
 				int interX = currX - (idx[0] - northNorthEastCounter);
 				int interY = currY + ringCounter;
@@ -587,18 +593,20 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 extern "C" __declspec ( dllexport ) 
 void _stdcall staging(float* zArray, int zArrayLengthX, 
 int zArrayLengthY, int* visibleArray, int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ, 
-int rasterWidth, int rasterHeight, float* losArray)
+int rasterWidth, int rasterHeight, float* losArray, int gpuType)
 {
 
 
-		calcDDA(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
-			visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight);
-
-		//calcR3(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
-		//	visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight);
-
-		//calcXdraw(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
-		//	visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight, losArray);
-
-		
+	//if (gpuType == XDRAW)
+	//{	
+		calcXdraw(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
+		  visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight, losArray);
+	//}
+	//else if (gpuType == DDA)
+	//{
+	//	calcDDA(zArray, zArrayLengthX, zArrayLengthY, visibleArray,
+	//		visibleArrayX, visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight);
+	//}
+	
+	
 }

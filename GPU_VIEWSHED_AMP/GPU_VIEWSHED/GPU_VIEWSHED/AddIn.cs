@@ -216,7 +216,7 @@ namespace GPU_VIEWSHED
            // callR3();
             //callR2();
 
-           // callGPU(currX, currY, currZ, "XDRAW");
+            callGPU(currX, currY, currZ, "XDRAW");
 
             //t.Join();//needs join as the code will send back results without it
             stopwatch.Stop();
@@ -261,8 +261,60 @@ namespace GPU_VIEWSHED
             //Determine which GPU method to run
             if (gpuType == "XDRAW")
             {
+                int destX, destY;
                 g = 1;
                 viewshedType = " GPU - XDRAW ";
+
+                // Precaculate the 8 compass points for use in losArray
+                preCalculateDDA(currX, currY, currZ, currX, rasterHeight - 1);
+                preCalculateDDA(currX, currY, currZ, currX, 0);
+
+                preCalculateDDA(currX, currY, currZ, 0, currY);
+                preCalculateDDA(currX, currY, currZ, rasterWidth - 1, currY);
+
+
+                //NW
+                destX = currX - (rasterHeight - currY);
+                destY = rasterHeight - 1;
+                if (destX <= 0)
+                {
+                    destY = rasterHeight + destX - 1;
+                    destX = 0;
+                }
+                preCalculateDDA(currX, currY, currZ, destX, destY);
+
+
+
+                //SE
+                destX = currX + (rasterHeight - (rasterHeight - currY));
+                destY = 0;
+                if (destX >= rasterWidth - 1)
+                {
+                    destY = (destX - rasterWidth - 1);
+                    destX = rasterWidth - 1;
+                }
+                preCalculateDDA(currX, currY, currZ, destX, destY);
+
+
+                //SW
+                destX = currX - (rasterHeight - (rasterHeight - currY));
+                destY = 0;
+                if (destX <= 0)
+                {
+                    destY = rasterHeight - (rasterHeight + destX - 1);
+                    destX = 0;
+                }
+                preCalculateDDA(currX, currY, currZ, destX, destY);
+
+
+                visibleArrayInt[currY - 1, currX] = 1;
+                visibleArrayInt[currY + 1, currX] = 1;
+                visibleArrayInt[currY + 1, currX + 1] = 1;
+                visibleArrayInt[currY, currX + 1] = 1;
+                visibleArrayInt[currY - 1, currX + 1] = 1;
+                visibleArrayInt[currY, currX - 1] = 1;
+                visibleArrayInt[currY + 1, currX - 1] = 1;
+                visibleArrayInt[currY - 1, currX - 1] = 1;
             }
             else if (gpuType == "SDRAW")
             {
@@ -270,7 +322,7 @@ namespace GPU_VIEWSHED
                 g = 2;
                 viewshedType = " GPU - SDRAW";
 
-                // Precaculate the 8 compass points fro use in losArray
+                // Precaculate the 8 compass points for use in losArray
                 preCalculateDDA(currX, currY, currZ, currX, rasterHeight - 1);
                 preCalculateDDA(currX, currY, currZ, currX, 0);
 
