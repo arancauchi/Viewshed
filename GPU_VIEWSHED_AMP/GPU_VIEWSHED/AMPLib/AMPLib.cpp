@@ -19,6 +19,7 @@
 #define XDRAW 1
 #define SDRAW 2
 #define DDA 3
+#define R3 4
 
 
 
@@ -37,11 +38,9 @@ using namespace concurrency;
 	dataViewVisible.discard_data();
     // Run code on the GPU
 
-	
-	//Use while loop to determine path
 
 
-		parallel_for_each(av, eY, [=] (index<1> idx) restrict(amp)
+	parallel_for_each(av, eY, [=] (index<1> idx) restrict(amp)
     {
 		
 		int destX;
@@ -79,7 +78,6 @@ using namespace concurrency;
             {
                 steps = fast_math::fabs(dx);
             }
-
             else
             {
                 steps = fast_math::fabs(dy);
@@ -185,6 +183,275 @@ using namespace concurrency;
 
                     //elevation check
                     if (elev >= highest)
+                    {
+                        dataViewVisible[(int)fast_math::round(y)][(int)fast_math::round(x)] = 1;
+                        highest = elev;
+                    }
+
+                
+            }
+		}
+		
+	});
+		
+
+
+}
+
+	void calcR3(float* zArray, int zArrayLengthX, int zArrayLengthY, int* visibleArray, int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ, int rasterWidth, int rasterHeight)
+{
+	accelerator device(accelerator::default_accelerator);
+	accelerator_view av = device.default_view;
+
+	extent<1> eY(zArrayLengthY);
+	extent<1> eX(zArrayLengthX);
+	const array_view<const float,2> dataViewZ(zArrayLengthY, zArrayLengthX, &zArray[0,0]);
+	array_view<int,2> dataViewVisible(visibleArrayY, visibleArrayX, &visibleArray[0,0]);
+	dataViewVisible.discard_data();
+    // Run code on the GPU
+
+
+
+	parallel_for_each(av, eY, [=] (index<1> idx) restrict(amp)
+    {
+		
+		int destX;
+		int destY;
+		for(int i = 0; i < 2; i ++)
+		{
+			if(i == 0)
+			{
+				destX = 0;
+				destY = idx[0];
+			}
+			else
+			{
+				destX = rasterWidth;
+				destY = rasterHeight - idx[0];
+			}
+
+
+            //Values for stepping through the line
+            int dx = destX - currX;
+            int dy = destY - currY;
+            int steps;
+            float xIncrement, yIncrement;
+            float x = (int)currX;
+            float y = (int)currY;
+            float prevX = x;
+            float prevY = y;
+
+            //previously highest LOS
+            float highest = -999.0;
+
+
+            //Determine whether steps should be in the x or y axis
+			if (fast_math::fabs(dx) >fast_math::fabs(dy))
+            {
+                steps = fast_math::fabs(dx);
+            }
+            else
+            {
+                steps = fast_math::fabs(dy);
+            }
+
+
+            xIncrement = dx / (float)steps;
+            yIncrement = dy / (float)steps;
+
+
+
+            //traverse through the line step by step
+            for (int k = 0; k < steps; k++)
+            {
+                //move the current check point
+                x += xIncrement;
+                y += yIncrement;
+
+				//Delta between the two points surrounding the ray
+                float diffX = x - (float)fast_math::round(x);
+                float diffY = y - (float)fast_math::round(y);
+
+                //grab the snapped height closest to the ray
+                float lerpHeight = dataViewZ((int)fast_math::round(y), (int)fast_math::round(x));
+
+                //used to store the height of the closest neighbour
+                float nextHeight;
+
+                //Check to see if any of the values will exceed the boundaries of the array
+                //If so, just use the snapped lerpHeight instead
+                if (x > 1 && x < rasterWidth && y > 1 && y < rasterHeight - 1)
+                {
+                    //if the deltaX is negative, check x + 1
+                    if (diffX < 0)
+                    {
+                        //grab the nextHeight
+                        nextHeight = dataViewZ((int)y, (int)x + 1);
+                        //interpolated height is original heights + difference in heights * delta 
+                        lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffX);
+                    }
+                    //if the deltaX is positive, check x -1
+                    if (diffX > 0)
+                    {
+                        //grab the nextHeight
+                        nextHeight = dataViewZ((int)y, (int)x - 1);
+                        //interpolated height is original heights + difference in heights * delta 
+                        lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffX);
+                    }
+                    //if the deltaY is negative, check y + 1
+                    if (diffY < 0)
+                    {
+                        //grab the nextHeight
+                        nextHeight = dataViewZ((int)y + 1, (int)x);
+                        //interpolated height is original heights + difference in heights * delta 
+                        lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffY);
+                    }
+                    //if the deltaY is positive, check y - 1
+                    if (diffY > 0)
+                    {
+                        //grab the nextHeight
+                        nextHeight = dataViewZ((int)y - 1, (int)x);
+                        //interpolated height is original heights + difference in heights * delta 
+                        lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffY);
+                    }
+                }
+
+                    //distance to the check point, snapped to whole values 
+                    float dist = fast_math::sqrt(((int)x - currX) * ((int)x - currX) + 
+						((int)y - currY) * ((int)y - currY));
+
+
+
+                    //Elevation to check point
+                    float elev = (dataViewZ[(int)y][(int)x] - currZ) / dist;
+
+                    //elevation check
+                    if (elev > highest)
+                    {
+                        dataViewVisible[(int)fast_math::round(y)][(int)fast_math::round(x)] = 1;
+                        highest = elev;
+                    }
+
+                
+            }
+		}
+		
+	});
+		
+
+		parallel_for_each(av, eX, [=] (index<1> idx) restrict(amp)
+    {
+		
+		int destX;
+		int destY;
+		for(int i = 0; i < 2; i ++)
+		{
+			if(i == 0)
+			{
+				destX = idx[0];
+				destY = 0;
+			}
+			else
+			{
+				destX = rasterWidth - idx[0];
+				destY = rasterHeight;
+			}
+  //Values for stepping through the line
+            int dx = destX - currX;
+            int dy = destY - currY;
+            int steps;
+            float xIncrement, yIncrement;
+            float x = (int)currX;
+            float y = (int)currY;
+            float prevX = x;
+            float prevY = y;
+
+            //previously highest LOS
+            float highest = -999.0;
+
+
+            //Determine whether steps should be in the x or y axis
+			if (fast_math::fabs(dx) >fast_math::fabs(dy))
+            {
+                steps = fast_math::fabs(dx);
+            }
+            else
+            {
+                steps = fast_math::fabs(dy);
+            }
+
+
+            xIncrement = dx / (float)steps;
+            yIncrement = dy / (float)steps;
+
+
+
+            //traverse through the line step by step
+            for (int k = 0; k < steps; k++)
+            {
+                //move the current check point
+                x += xIncrement;
+                y += yIncrement;
+
+				//Delta between the two points surrounding the ray
+                float diffX = x - (float)fast_math::round(x);
+                float diffY = y - (float)fast_math::round(y);
+
+                //grab the snapped height closest to the ray
+                float lerpHeight = dataViewZ((int)fast_math::round(y), (int)fast_math::round(x));
+
+                //used to store the height of the closest neighbour
+                float nextHeight;
+
+                //Check to see if any of the values will exceed the boundaries of the array
+                //If so, just use the snapped lerpHeight instead
+                if (x > 1 && x < rasterWidth && y > 1 && y < rasterHeight - 1)
+                {
+                    //if the deltaX is negative, check x + 1
+                    if (diffX < 0)
+                    {
+                        //grab the nextHeight
+                        nextHeight = dataViewZ((int)y, (int)x + 1);
+                        //interpolated height is original heights + difference in heights * delta 
+                        lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffX);
+                    }
+                    //if the deltaX is positive, check x -1
+                    if (diffX > 0)
+                    {
+                        //grab the nextHeight
+                        nextHeight = dataViewZ((int)y, (int)x - 1);
+                        //interpolated height is original heights + difference in heights * delta 
+                        lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffX);
+                    }
+                    //if the deltaY is negative, check y + 1
+                    if (diffY < 0)
+                    {
+                        //grab the nextHeight
+                        nextHeight = dataViewZ((int)y + 1, (int)x);
+                        //interpolated height is original heights + difference in heights * delta 
+                        lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffY);
+                    }
+                    //if the deltaY is positive, check y - 1
+                    if (diffY > 0)
+                    {
+                        //grab the nextHeight
+                        nextHeight = dataViewZ((int)y - 1, (int)x);
+                        //interpolated height is original heights + difference in heights * delta 
+                        lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffY);
+                    }
+                }
+
+                    //distance to the check point, snapped to whole values 
+                    float dist = fast_math::sqrt(((int)x - currX) * ((int)x - currX) + 
+						((int)y - currY) * ((int)y - currY));
+
+
+
+                    //Elevation to check point
+                    float elev = (dataViewZ[(int)y][(int)x] - currZ) / dist;
+
+                    //elevation check
+                    if (elev > highest)
                     {
                         dataViewVisible[(int)fast_math::round(y)][(int)fast_math::round(x)] = 1;
                         highest = elev;
@@ -597,16 +864,21 @@ int rasterWidth, int rasterHeight, float* losArray, int gpuType)
 {
 
 
-	//if (gpuType == XDRAW)
-	//{	
+	if (gpuType == XDRAW)
+	{	
 		calcXdraw(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
 		  visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight, losArray);
-	//}
-	//else if (gpuType == DDA)
-	//{
-	//	calcDDA(zArray, zArrayLengthX, zArrayLengthY, visibleArray,
-	//		visibleArrayX, visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight);
-	//}
+	}
+	else if (gpuType == DDA)
+	{
+		calcDDA(zArray, zArrayLengthX, zArrayLengthY, visibleArray,
+			visibleArrayX, visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight);
+	}
+	else if (gpuType == R3)
+	{
+		calcR3(zArray, zArrayLengthX, zArrayLengthY, visibleArray,
+			visibleArrayX, visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight);
+	}
 	
 	
 }

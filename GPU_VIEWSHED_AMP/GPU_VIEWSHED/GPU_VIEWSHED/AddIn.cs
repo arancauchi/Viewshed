@@ -212,11 +212,11 @@ namespace GPU_VIEWSHED
 
             //t.Start();
 
-            callDDA();
+           // callDDA();
             //callR3();
             //callR2();
             
-            //callGPU(currX, currY, currZ, "XDRAW");
+            callGPU(currX, currY, currZ, "R3");
 
             //t.Join();//needs join as the code will send back results without it
             stopwatch.Stop();
@@ -375,10 +375,15 @@ namespace GPU_VIEWSHED
 
 
             }
-            if (gpuType == "DDA")
+            else if (gpuType == "DDA")
             {
                 g = 3;
                 viewshedType = " GPU - DDA";
+            }
+            else if (gpuType == "R3")
+            {
+                g = 4;
+                viewshedType = " GPU - R3";
             }
 
 
