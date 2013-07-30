@@ -1,4 +1,5 @@
-﻿using System;
+﻿
+using System;
 using System.Diagnostics;
 using Myriax.Eonfusion.API;
 using Myriax.Eonfusion.API.Binding;
@@ -14,6 +15,9 @@ using System.Linq;
 using System.Text;
 using Add_in1;
 
+
+
+
 namespace GPU_VIEWSHED
 {
     public class ViewshedAddIn : IAddIn
@@ -23,14 +27,13 @@ namespace GPU_VIEWSHED
          * Our .DLL imports
          * Staging is called so we can use C++ AMP restricted keywords!!!!
          */
-       // [DllImport("AMPLib", CallingConvention = CallingConvention.StdCall)]
+        // [DllImport("AMPLib", CallingConvention = CallingConvention.StdCall)]
         //extern unsafe static void calcGPU(float* zaArray, int zArrayLengthX, int zArrayLengthY, int* visibleArray, 
-       //     int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ, int rasterWidth, int rasterHeight);
-        
+        //     int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ, int rasterWidth, int rasterHeight);
+
         [DllImport("AMPLib", CallingConvention = CallingConvention.StdCall)]
         extern unsafe static void staging(float* zaArray, int zArrayLengthX, int zArrayLengthY, int* visibleArray,
-            int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ,
-            int rasterWidth, int rasterHeight, float* losArrayPt);
+            int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ, int rasterWidth, int rasterHeight, float* losArrayPt, int g);
 
 
 
@@ -44,6 +47,7 @@ namespace GPU_VIEWSHED
         //Array of visible pixels to be parsed out
         bool[,] visibleArray;
         int[,] visibleArrayInt;
+        int[,] visibleArrayCPU;
 
         //Array of vertices which have been visited
         bool[,] visitedArray;
@@ -54,8 +58,13 @@ namespace GPU_VIEWSHED
         int[] octants = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
         int rasterWidth, rasterHeight;
+        int globalCurrX, globalCurrY, globalCurrZ;
 
         Stopwatch stopwatch;
+
+        //String holding the viewshed type used during trace events
+        String viewshedType;
+
 
         public IDataset Execute(IApplication application)
         {
@@ -77,6 +86,8 @@ namespace GPU_VIEWSHED
             double focalZ = focalVertex.Z;
 
             application.EventGroup.InsertInfoEvent(string.Format("Focal point is ({0}, {1}).", focalX, focalY));
+            //Thread t = new Thread(callDDA);          // Kick off a new thread
+
 
 
 
@@ -90,6 +101,7 @@ namespace GPU_VIEWSHED
             zArrayFloat = new float[rasterHeight, rasterWidth];
             visibleArray = new bool[rasterHeight, rasterWidth];
             visibleArrayInt = new int[rasterHeight, rasterWidth];
+            visibleArrayCPU = new int[rasterHeight, rasterWidth];
             losArray = new float[rasterHeight, rasterWidth];
 
             visitedArray = new bool[rasterHeight, rasterWidth];
@@ -103,8 +115,8 @@ namespace GPU_VIEWSHED
             IValueList xAttributeList = demVertexTable.GetBoundValueList(vertex => vertex.X);
             IValueList yAttributeList = demVertexTable.GetBoundValueList(vertex => vertex.Y);
 
-            application.EventGroup.InsertInfoEvent(string.Format("X attribute name is {0}.", xAttributeList.Name));
-            application.EventGroup.InsertInfoEvent(string.Format("X transform is {0}.", demRaster.RegularListCoefficients(xAttributeList) == null ? "null" : "something"));
+            //application.EventGroup.InsertInfoEvent(string.Format("X attribute name is {0}.", xAttributeList.Name));
+            //application.EventGroup.InsertInfoEvent(string.Format("X transform is {0}.", demRaster.RegularListCoefficients(xAttributeList) == null ? "null" : "something"));
 
             //if (!demRaster.ListIsRegular(xAttributeList))
             //{
@@ -137,6 +149,9 @@ namespace GPU_VIEWSHED
 
             double denom = xTransform[0] * yTransform[1] - yTransform[0] * xTransform[1];
 
+
+
+
             xInvTransform[0] = yTransform[1] / denom;
             xInvTransform[1] = -xTransform[1] / denom;
             xInvTransform[2] = (xTransform[1] * yTransform[2] - yTransform[1] * xTransform[2]) / denom;
@@ -159,6 +174,8 @@ namespace GPU_VIEWSHED
 
             //  Copy Z values from Eon structures to local array.
             Trace.WriteLine("Grabbing raster");
+            TraceEvent("Grabbing Raster", application);
+
             demHelper.ProcessVertexWindow2D(0, 0, rasterWidth, rasterHeight, delegate(int rasterIndex, int[] rasterTileOfs, int windowIndexOfs, int[] windowOfs, int spanSize)
             {
                 int windowOfsX = windowOfs[0];
@@ -166,14 +183,14 @@ namespace GPU_VIEWSHED
 
                 for (int i = 0; i < spanSize; ++i)
                 {
-                    zArray[windowOfsY, windowOfsX + i] = demVertexTable[rasterIndex + i].Z;
+                    //  zArray[windowOfsY, windowOfsX + i] = demVertexTable[rasterIndex + i].Z;
                     zArrayFloat[windowOfsY, windowOfsX + i] = (float)demVertexTable[rasterIndex + i].Z;
                 }
             });
 
 
-
-            Trace.WriteLine("Finished grabbing raster");
+            TraceEvent("Finished Grabbing raster", application);
+            Trace.WriteLine("Finished Grabbing Raster");
 
 
             //Transform world coordinates to local coordinates
@@ -182,21 +199,34 @@ namespace GPU_VIEWSHED
 
             //Duplication pretty much
             int currX = (int)Math.Round(focalX);
+            globalCurrX = currX;
+
             int currY = (int)Math.Round(focalY);
+            globalCurrY = currY;
+
             int currZ = (int)Math.Round(focalZ);
+            globalCurrZ = currZ;
+
+            stopwatch.Start();
 
 
-            //callXdraw(400, currX, currY, currZ);
-            //callDDA(currX, currY, currZ);
-            //callR3(currX, currY, currZ);
-            //callR2(currX, currY, currZ);
+            //t.Start();
 
+            //callDDA();
+           // callR3();
+            //callR2();
 
-            callDDA_GPU(currX, currY, currZ);
-            
-            
+           // callGPU(currX, currY, currZ, "XDRAW");
+
+            //t.Join();//needs join as the code will send back results without it
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
+
             //  Copy Visible values from local array to Eon structures.
+            TraceEvent("Sending raster", application);
             Trace.WriteLine("Sending raster");
+
             demHelper.ProcessVertexWindow2D(0, 0, rasterWidth, rasterHeight, delegate(int rasterIndex, int[] rasterTileOfs, int windowIndexOfs, int[] windowOfs, int spanSize)
             {
                 int windowOfsX = windowOfs[0];
@@ -204,114 +234,115 @@ namespace GPU_VIEWSHED
 
                 for (int i = 0; i < spanSize; ++i)
                 {
-                    
-                    //if (visibleArrayInt[windowOfsY, windowOfsX + i] >= 1)
-                    //{
-                    //    demVertexTable[rasterIndex + i].Visible = true;
-                    //}
-                    //else
-                    //{
-                     //   demVertexTable[rasterIndex + i].Visible = false;
-                    //}
-                    demVertexTable[rasterIndex + i].VisibleInt = visibleArrayInt[windowOfsY, windowOfsX + i];
+
+                    demVertexTable[rasterIndex + i].VisibleInt = visibleArrayCPU[windowOfsY, windowOfsX + i] + visibleArrayInt[windowOfsY, windowOfsX + i];
+
                 }
             });
-            Trace.WriteLine("Finished sending raster");
-            System.GC.Collect();
+            TraceEvent("Finished Sending Raster", application);
+            Trace.WriteLine("Finished Sending Raster");
+
             return application.InputDatasets[0];
         }
 
         #region Private methods.
 
-        
 
-        private unsafe void callDDA_GPU(int currX, int currY, int currZ)
+
+
+
+        private unsafe void callGPU(int currX, int currY, int currZ, string gpuType)
         {
-            
-            stopwatch.Start();
+            //which gpu option to choose
+            int g = 1;
             //set start point as visible
             visibleArrayInt[currY, currX] = 1;
-            int destX, destY;
 
-
-
-            // Precaculate the 8 compass points fro use in losArray
-            preCalculateDDA(currX, currY, currZ, currX, rasterHeight - 1);
-            preCalculateDDA(currX, currY, currZ, currX, 0);
-
-            preCalculateDDA(currX, currY, currZ, 0, currY);
-            preCalculateDDA(currX, currY, currZ, rasterWidth -1, currY);
-
-
-            //NW
-            destX = currX - (rasterHeight - currY);
-            destY = rasterHeight - 1;
-            if (destX <= 0)
+            //Determine which GPU method to run
+            if (gpuType == "XDRAW")
             {
-                destY = rasterHeight + destX - 1; 
-                destX = 0;
+                g = 1;
+                viewshedType = " GPU - XDRAW ";
             }
-            preCalculateDDA(currX, currY, currZ, destX , destY);
-
-            //NE
-            destX = currX + (rasterHeight - currY);
-            destY = rasterHeight - 1;
-            if (destX >= rasterWidth - 1)
+            else if (gpuType == "SDRAW")
             {
-                destY = rasterHeight - 1 - (destX - rasterWidth - 1);
-                destX = rasterWidth - 1;
+                int destX, destY;
+                g = 2;
+                viewshedType = " GPU - SDRAW";
+
+                // Precaculate the 8 compass points fro use in losArray
+                preCalculateDDA(currX, currY, currZ, currX, rasterHeight - 1);
+                preCalculateDDA(currX, currY, currZ, currX, 0);
+
+                preCalculateDDA(currX, currY, currZ, 0, currY);
+                preCalculateDDA(currX, currY, currZ, rasterWidth - 1, currY);
+
+
+                //NW
+                destX = currX - (rasterHeight - currY);
+                destY = rasterHeight - 1;
+                if (destX <= 0)
+                {
+                    destY = rasterHeight + destX - 1;
+                    destX = 0;
+                }
+                preCalculateDDA(currX, currY, currZ, destX, destY);
+
+
+
+                //SE
+                destX = currX + (rasterHeight - (rasterHeight - currY));
+                destY = 0;
+                if (destX >= rasterWidth - 1)
+                {
+                    destY = (destX - rasterWidth - 1);
+                    destX = rasterWidth - 1;
+                }
+                preCalculateDDA(currX, currY, currZ, destX, destY);
+
+
+                //SW
+                destX = currX - (rasterHeight - (rasterHeight - currY));
+                destY = 0;
+                if (destX <= 0)
+                {
+                    destY = rasterHeight - (rasterHeight + destX - 1);
+                    destX = 0;
+                }
+                preCalculateDDA(currX, currY, currZ, destX, destY);
+
+
+                visibleArrayInt[currY - 1, currX] = 1;
+                visibleArrayInt[currY + 1, currX] = 1;
+                visibleArrayInt[currY + 1, currX + 1] = 1;
+                visibleArrayInt[currY, currX + 1] = 1;
+                visibleArrayInt[currY - 1, currX + 1] = 1;
+                visibleArrayInt[currY, currX - 1] = 1;
+                visibleArrayInt[currY + 1, currX - 1] = 1;
+                visibleArrayInt[currY - 1, currX - 1] = 1;
+
+
             }
-            preCalculateDDA(currX, currY, currZ, destX, destY);
-
-
-            //SE
-            destX = currX + (rasterHeight - (rasterHeight - currY));
-            destY = 0;
-            if (destX >= rasterWidth - 1)
+            if (gpuType == "DDA")
             {
-                destY =  (destX - rasterWidth -1);
-                destX = rasterWidth - 1;
+                g = 3;
+                viewshedType = " GPU - DDA";
             }
-            preCalculateDDA(currX, currY, currZ, destX, destY);
 
 
-            //SW
-            destX = currX - (rasterHeight - (rasterHeight - currY));
-            destY = 0;
-            if (destX <= 0)
-            {
-                destY = rasterHeight - (rasterHeight + destX - 1);
-                destX = 0;
-            }
-            preCalculateDDA(currX, currY, currZ, destX, destY);
-
-
-            visibleArrayInt[currY - 1, currX] = 1;
-            visibleArrayInt[currY + 1, currX] = 1;
-            visibleArrayInt[currY + 1, currX + 1] = 1;
-            visibleArrayInt[currY, currX + 1] = 1;
-            visibleArrayInt[currY - 1, currX + 1] = 1;
-            visibleArrayInt[currY , currX - 1] = 1;
-            visibleArrayInt[currY + 1, currX - 1] = 1;
-            visibleArrayInt[currY - 1, currX - 1] = 1;
-
-
-
+            //Start Timing
+            stopwatch.Start();
             
-
-
             fixed (int* visibleArrayPt = &visibleArrayInt[0, 0])
             fixed (float* zArrayPt = &zArrayFloat[0, 0])
             fixed (float* losArrayPt = &losArray[0, 0])
+                staging(zArrayPt, zArray.GetLength(1), zArray.GetLength(0),
+                    visibleArrayPt, visibleArrayInt.GetLength(1), visibleArrayInt.GetLength(0),
+                    currX, currY, currZ, rasterWidth, rasterHeight, losArrayPt, g);
 
-            staging(zArrayPt, zArray.GetLength(1), zArray.GetLength(0), 
-                visibleArrayPt, visibleArrayInt.GetLength(1), visibleArrayInt.GetLength(0),
-                 currX, currY, currZ, rasterWidth, rasterHeight, losArrayPt);
-
+            //Stop Timing
             stopwatch.Stop();
-            Trace.WriteLine("Time elapsed DDA_GPU: " + stopwatch.Elapsed);
 
-            
         }
 
         private void preCalculateDDA(int focalX, int focalY, int focalZ, int destinationX, int destinationY)
@@ -387,122 +418,110 @@ namespace GPU_VIEWSHED
 
         #region CPU ALGORITHMS DON'T USE - XDRAW IS OLD AND INCOMPLETE
 
-        private void callXdraw(int ring, int currX, int currY, int currZ)
+
+
+        private void callDDA()
         {
-            stopwatch.Start();
-            //Begin calculating each ring
-            for (int r = 0; r < ring; r += 1)
-            {
-
-                //calculate one ring on the octant plane
-                 calculateOctants(r, currX, currY, currZ);
-
-            }
-            stopwatch.Stop();
-            Trace.WriteLine("Time elapsed XDRAW: " + stopwatch.Elapsed);
-        }
-
-        private void callDDA(int currX, int currY, int currZ)
-        {
-            
+            viewshedType = "CPU - DDA";
             stopwatch.Start();
             int x = 0;
             int y = 0;
             for (x = 0; x < rasterWidth; x++)
             {
-                calculateDDA(currX, currY, currZ, x, y);
+                calculateDDA(globalCurrX, globalCurrY, globalCurrZ, x, y);
             }
 
 
             for (y = 0; y < rasterHeight; y++)
             {
-                calculateDDA(currX, currY, currZ, x - 1, y);
+                calculateDDA(globalCurrX, globalCurrY, globalCurrZ, x - 1, y);
 
             }
 
             x = 0;
             for (y = 0; y < rasterHeight; y++)
             {
-                calculateDDA(currX, currY, currZ, x, y);
+                calculateDDA(globalCurrX, globalCurrY, globalCurrZ, x, y);
             }
 
             x = 0;
             y = rasterHeight - 1;
             for (x = 0; x < rasterWidth; x++)
             {
-                calculateDDA(currX, currY, currZ, x, y);
+                calculateDDA(globalCurrX, globalCurrY, globalCurrZ, x, y);
             }
             stopwatch.Stop();
             Trace.WriteLine("Time elapsed DDA: " + stopwatch.Elapsed);
 
         }
 
-        private void callR3(int currX, int currY, int currZ)
+        private void callR3()
         {
-
+            viewshedType = "CPU - R3";
             stopwatch.Start();
             int x = 0;
             int y = 0;
+
             for (x = 0; x < rasterWidth; x++)
             {
-                calculateR3(currX, currY, currZ, x, y);
+                calculateR3(globalCurrX, globalCurrY, globalCurrZ, x, y);
             }
 
 
             for (y = 0; y < rasterHeight; y++)
             {
-                calculateR3(currX, currY, currZ, x - 1, y);
+                calculateR3(globalCurrX, globalCurrY, globalCurrZ, x - 1, y);
 
             }
 
             x = 0;
             for (y = 0; y < rasterHeight; y++)
             {
-                calculateR3(currX, currY, currZ, x, y);
+                calculateR3(globalCurrX, globalCurrY, globalCurrZ, x, y);
             }
 
             x = 0;
             y = rasterHeight - 1;
             for (x = 0; x < rasterWidth; x++)
             {
-                calculateR3(currX, currY, currZ, x, y);
+                calculateR3(globalCurrX, globalCurrY, globalCurrZ, x, y);
             }
             stopwatch.Stop();
             Trace.WriteLine("Time elapsed R3: " + stopwatch.Elapsed);
         }
 
-        private void callR2(int currX, int currY, int currZ)
+        private void callR2()
         {
-
+            viewshedType = "CPU - R2";
             stopwatch.Start();
             int x = 0;
             int y = 0;
             for (x = 0; x < rasterWidth; x++)
             {
-                calculateR2(currX, currY, currZ, x, y);
+                calculateR2(globalCurrX, globalCurrY, globalCurrZ, x, y);
             }
-
 
             for (y = 0; y < rasterHeight; y++)
             {
-                calculateR2(currX, currY, currZ, x - 1, y);
+                calculateR2(globalCurrX, globalCurrY, globalCurrZ, x - 1, y);
 
             }
 
             x = 0;
             for (y = 0; y < rasterHeight; y++)
             {
-                calculateR2(currX, currY, currZ, x, y);
+                calculateR2(globalCurrX, globalCurrY, globalCurrZ, x, y);
             }
 
             x = 0;
             y = rasterHeight - 1;
             for (x = 0; x < rasterWidth; x++)
             {
-                calculateR2(currX, currY, currZ, x, y);
+                calculateR2(globalCurrX, globalCurrY, globalCurrZ, x, y);
             }
             stopwatch.Stop();
             Trace.WriteLine("Time elapsed R2: " + stopwatch.Elapsed);
+
         }
 
         private void calculateDDA(int focalX, int focalY, int focalZ, int destinationX, int destinationY)
@@ -522,7 +541,7 @@ namespace GPU_VIEWSHED
             float prevY = y;
 
             //previously highest LOS
-            double highest = -999.0;
+            float highest = -999;
 
 
             //Determine whether steps should be in the x or y axis
@@ -541,37 +560,29 @@ namespace GPU_VIEWSHED
             yIncrement = dy / (float)steps;
 
             //first point is visible
-            visibleArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
-
-            //Check distance to destiantion point
-            double finalDist = Math.Sqrt((destX - focalX) * (destX - focalX) + (destY - focalY) * (destY - focalY));
-
-            //Check elevation to destination point
-            double finalElev = (zArray[(int)destY, (int)destX] - focalZ) / finalDist;
-            finalElev += 90;//rotate the angle of the elevation calculations away fro -0, 0 to 90 degrees
+            visibleArrayInt[(int)y, (int)x] = 1;
 
             //traverse through the line step by step
             for (int k = 0; k < steps; k++)
             {
+
                 //move the current check point
                 x += xIncrement;
                 y += yIncrement;
 
-                    //distance to the check point, snapped to whole values 
-                    double dist = Math.Sqrt(((int)Math.Round(x) - focalX) * ((int)Math.Round(x) - focalX) + ((int)Math.Round(y) - focalY) * ((int)Math.Round(y) - focalY));
+                //distance to the check point, snapped to whole values 
+                float dist = (float)Math.Sqrt((x - focalX) * (x - focalX) + (y - focalY) * (y - focalY));
 
-                    //Elevation to check point
-                    double elev = (zArray[(int)y, (int)x] - focalZ) / dist;
+                //Elevation to check point
+                float elev = (zArrayFloat[(int)y, (int)x] - focalZ) / dist;
 
-                    //elevation check
-                    if (elev <= finalElev && elev >= highest)
-                    {
-                        visibleArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
-                        highest = elev;
-                        visitedArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
-                    }
+                //elevation check
+                if (elev >= highest)
+                {
+                    visibleArrayCPU[(int)y, (int)x] = 1;
+                    highest = elev;
+                }
 
-                
             }
 
         }
@@ -594,7 +605,7 @@ namespace GPU_VIEWSHED
             float y = (int)focalY;
             float prevX = x;
             float prevY = y;
-            double highest = -999.0;
+            float highest = -999;
 
 
 
@@ -614,14 +625,9 @@ namespace GPU_VIEWSHED
 
 
             //first point is visible
-            visibleArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
+            visibleArrayInt[(int)y, (int)x] = 1;
 
-            //calculate distance to the final check point
-            double finalDist = Math.Sqrt((destX - focalX) * (destX - focalX) + (destY - focalY) * (destY - focalY));
 
-            //calculate elevation to the final check point
-            double finalElev = (zArray[(int)destY, (int)destX] - focalZ) / finalDist;
-            finalElev += 90;//rotate the angle of the elevation calculations away fro -0, 0 to 90 degrees
 
             //Step through the line
             for (int k = 0; k < steps; k++)
@@ -632,14 +638,14 @@ namespace GPU_VIEWSHED
                 y += yIncrement;
 
                 //Delta between the two points surrounding the ray
-                double diffX = x - Math.Round(x);
-                double diffY = y - Math.Round(y);
+                float diffX = x - (float)Math.Round(x);
+                float diffY = y - (float)Math.Round(y);
 
                 //grab the snapped height closest to the ray
-                double lerpHeight = zArray[(int)Math.Round(y), (int)Math.Round(x)];
+                float lerpHeight = zArrayFloat[(int)Math.Round(y), (int)Math.Round(x)];
 
                 //used to store the height of the closest neighbour
-                double nextHeight;
+                float nextHeight;
 
                 //Check to see if any of the values will exceed the boundaries of the array
                 //If so, just use the snapped lerpHeight instead
@@ -649,7 +655,7 @@ namespace GPU_VIEWSHED
                     if (diffX < 0)
                     {
                         //grab the nextHeight
-                        nextHeight = zArray[(int)y, (int)x + 1];
+                        nextHeight = zArrayFloat[(int)y, (int)x + 1];
                         //interpolated height is original heights + difference in heights * delta 
                         lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffX);
                     }
@@ -657,7 +663,7 @@ namespace GPU_VIEWSHED
                     if (diffX > 0)
                     {
                         //grab the nextHeight
-                        nextHeight = zArray[(int)y, (int)x - 1];
+                        nextHeight = zArrayFloat[(int)y, (int)x - 1];
                         //interpolated height is original heights + difference in heights * delta 
                         lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffX);
                     }
@@ -665,7 +671,7 @@ namespace GPU_VIEWSHED
                     if (diffY < 0)
                     {
                         //grab the nextHeight
-                        nextHeight = zArray[(int)y + 1, (int)x];
+                        nextHeight = zArrayFloat[(int)y + 1, (int)x];
                         //interpolated height is original heights + difference in heights * delta 
                         lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffY);
                     }
@@ -673,7 +679,7 @@ namespace GPU_VIEWSHED
                     if (diffY > 0)
                     {
                         //grab the nextHeight
-                        nextHeight = zArray[(int)y - 1, (int)x];
+                        nextHeight = zArrayFloat[(int)y - 1, (int)x];
                         //interpolated height is original heights + difference in heights * delta 
                         lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffY);
                     }
@@ -681,20 +687,17 @@ namespace GPU_VIEWSHED
 
 
                 //calculate distance to the lerped x,y point
-                double dist = Math.Sqrt(((int)Math.Round(x) - focalX) * ((int)Math.Round(x) - focalX) + ((int)Math.Round(y) - focalY) * ((int)Math.Round(y) - focalY));
+                float dist = (float)Math.Sqrt(((int)Math.Round(x) - focalX) * ((int)Math.Round(x) - focalX) + ((int)Math.Round(y) - focalY) * ((int)Math.Round(y) - focalY));
 
                 //calculate the elevation at lerped point
-                double elev = (lerpHeight - focalZ) / dist;
+                float elev = (lerpHeight - focalZ) / dist;
 
                 //DO the sightline check
-                if (elev <= finalElev && elev >= highest)
+                if (elev >= highest)
                 {
-                    visibleArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
+                    visibleArrayCPU[(int)Math.Round(y), (int)Math.Round(x)] = 1;
                     highest = elev;
                 }
-
-                visitedArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
-
 
             }
         }
@@ -716,7 +719,7 @@ namespace GPU_VIEWSHED
             float y = (int)focalY;
             float prevX = x;
             float prevY = y;
-            double highest = -999.0;
+            float highest = -999;
 
 
 
@@ -736,14 +739,10 @@ namespace GPU_VIEWSHED
 
 
             //first point is visible
-            visibleArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
+            visibleArrayInt[(int)Math.Round(y), (int)Math.Round(x)] = 1;
 
             //calculate distance to the final check point
-            double finalDist = Math.Sqrt((destX - focalX) * (destX - focalX) + (destY - focalY) * (destY - focalY));
-
-            //calculate elevation to the final check point
-            double finalElev = (zArray[(int)destY, (int)destX] - focalZ) / finalDist;
-            finalElev += 90;//rotate the angle of the elevation calculations away fro -0, 0 to 90 degrees
+            float finalDist = (float)Math.Sqrt((destX - focalX) * (destX - focalX) + (destY - focalY) * (destY - focalY));
 
 
             //Step through the line
@@ -757,16 +756,16 @@ namespace GPU_VIEWSHED
                 {
 
                     //Delta between the two points surrounding the ray
-                    double diffX = x - Math.Round(x);
-                    double diffY = y - Math.Round(y);
+                    float diffX = x - (float)Math.Round(x);
+                    float diffY = y - (float)Math.Round(y);
 
 
 
                     //grab the snapped height closest to the ray
-                    double lerpHeight = zArray[(int)y, (int)x];
+                    float lerpHeight = zArrayFloat[(int)y, (int)x];
 
                     //used to store the height of the closest neighbour
-                    double nextHeight;
+                    float nextHeight;
 
                     //Check to see if any of the values will exceed the boundaries of the array
                     //If so, just use the snapped lerpHeight instead
@@ -778,7 +777,7 @@ namespace GPU_VIEWSHED
                             guessedX = (int)x + 1;
                             guessedY = (int)y;
                             //grab the nextHeight
-                            nextHeight = zArray[guessedY, guessedX];
+                            nextHeight = zArrayFloat[guessedY, guessedX];
                             //interpolated height is original heights + difference in heights * delta 
                             lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffX);
                         }
@@ -788,7 +787,7 @@ namespace GPU_VIEWSHED
                             guessedX = (int)x - 1;
                             guessedY = (int)y;
                             //grab the nextHeight
-                            nextHeight = zArray[guessedY, guessedX];
+                            nextHeight = zArrayFloat[guessedY, guessedX];
                             //interpolated height is original heights + difference in heights * delta 
                             lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffX);
                         }
@@ -798,7 +797,7 @@ namespace GPU_VIEWSHED
                             guessedX = (int)x;
                             guessedY = (int)y + 1;
                             //grab the nextHeight
-                            nextHeight = zArray[guessedY, guessedX];
+                            nextHeight = zArrayFloat[guessedY, guessedX];
                             //interpolated height is original heights + difference in heights * delta 
                             lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffY);
                         }
@@ -808,207 +807,38 @@ namespace GPU_VIEWSHED
                             guessedX = (int)x;
                             guessedY = (int)y - 1;
                             //grab the nextHeight
-                            nextHeight = zArray[guessedY, guessedX];
+                            nextHeight = zArrayFloat[guessedY, guessedX];
                             //interpolated height is original heights + difference in heights * delta 
                             lerpHeight = lerpHeight + ((nextHeight - lerpHeight) * diffY);
                         }
                     }
 
-                        //calculate distance to the lerped x,y point
-                        double dist = Math.Sqrt((x - focalX) * (x - focalX) + (y - focalY) * (y - focalY));
+                    //calculate distance to the lerped x,y point
+                    float dist = (float)Math.Sqrt((x - focalX) * (x - focalX) + (y - focalY) * (y - focalY));
 
-                        //calculate the elevation at lerped point
-                        double elev = (lerpHeight - focalZ) / dist;
+                    //calculate the elevation at lerped point
+                    float elev = (lerpHeight - focalZ) / dist;
 
-                        //DO the sightline check
-                        if (elev <= finalElev && elev >= highest)
-                        {
-                            visibleArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
-                            visibleArray[guessedY, guessedX] = true;
-                            highest = elev;
-                        }
-                        visitedArray[guessedY, guessedX] = true;
-                        visitedArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
-                    
+                    //DO the sightline check
+                    if (elev >= highest)
+                    {
+                        visibleArrayCPU[(int)Math.Round(y), (int)Math.Round(x)] = 1;
+                        //visibleArrayCPU[guessedY, guessedX] = 1;
+                        highest = elev;
+                    }
+                    // visitedArray[guessedY, guessedX] = true;
+                    visitedArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
+
 
 
                 }
             }
         }
 
-        //Method to calculate the 8 points of one ring in the compass directions
-        private void calculateOctants(int ring, double currX, double currY, double currZ)
+        //Trace an Eonfusion event
+        private void TraceEvent(String s, IApplication a)
         {
-
-            //The octant offsets in X, Y format :p
-            int[] offsets = { 0 , 1 , //S
-                                1 , 1 , //SE 
-                                1 , 0 , //E
-                                1 , -1 , // NE
-                                0 , -1 , //N
-                                -1 , -1 , //NW
-                                -1 , 0 , //W
-                                -1 , 1}; //SW
-
-
-            //Loop through the 8 compass points
-            for (int i = 0; i < 16; i += 2)
-            {
-
-
-                //The next point to be tested
-                int testX = (int)Math.Round(currX + offsets[i] * ring);
-                int testY = (int)Math.Round(currY + offsets[i + 1] * ring);
-
-                //Calculate distance from focal to test point and the determine its elevation
-                double dist = Math.Sqrt((testX - currX) * (testX - currX) + (testY - currY) * (testY - currY));
-
-                //Uses the A parallel computing approach to viewshed analysis of large terrain data using graphics processing units elevation formula
-                double elev = ((zArray[(int)testY, (int)testX] - currZ) / dist) + 90;
-
-                //Set the losArray plane with the calculated elevations
-                losArray[testY, testX] = (float)elev;
-
-                //if the calculated elevation is greater than the inner row of that octant set as visible
-                if (elev > prevLOS[i / 2])
-                {
-                    visibleArray[testY, testX] = true;
-                    prevLOS[i / 2] = elev;// update the highestLOS to this point
-
-                    // Trace.WriteLine("   Pixel is visible \n");
-                }
-
-
-
-                //Update the Octants array with the 8 compass points
-                octants[i] = (int)Math.Round(currX + offsets[i] * ring);
-                octants[i + 1] = (int)Math.Round(currY + offsets[i + 1] * ring);
-
-            }
-
-            //Begin calculating the points intervening the octant LOSs
-            calculateIntervals(ring, currX, currY, currZ);
-
-
-        }
-
-        //Calculates the points between compass points
-        private void calculateIntervals(int j, double currX, double currY, double currZ)
-        {
-
-            //Array of positions that move outward as the rings grow larger
-            int[] interPositions = new int[16];
-
-            //The two vertices(X1,Y1,X2,Y2 format) through which the LOS passes through
-            int[] interOffsets = { -1 , -1 , 0 , -1 , //NNE
-                                   -1 , 0 , -1 , -1 , //ENE
-                                   -1 , 1 , -1 , 0 , //ESE
-                                   0 , 1 , - 1 , 1 , //SSE
-                                   1 , 1 , 0 , 1 , // SSW
-                                   1 , 0 , 1 , 1 , //WSW
-                                   1 , -1 , 1 , 0 , // WNW
-                                   0 , -1 , 1 , -1 };//NNW
-
-            //Calculates the points between the octants for every ring
-            for (int ring = 0; ring < j; ring += 1)
-            {
-
-                //counter for looping through the interOffsets array
-                int interOffsetsCounter = 0;
-
-                //Loop through the 8 intervening octants whilst updating their positions as per their respective ring
-                for (int iter = 0; iter < 16; iter += 2)
-                {
-                    //NNE
-                    interPositions[0] = (int)Math.Round(currX + ring);
-                    interPositions[1] = octants[1];
-
-                    //ENE
-                    interPositions[2] = octants[6];
-                    interPositions[3] = (int)Math.Round(currY + ring);
-
-                    //ESE
-                    interPositions[4] = octants[6];
-                    interPositions[5] = (int)Math.Round(currY - ring);
-
-                    //SSE
-                    interPositions[6] = (int)Math.Round(currX + ring);
-                    interPositions[7] = octants[9];
-
-                    //SSW
-                    interPositions[8] = (int)Math.Round(currX - ring);
-                    interPositions[9] = octants[9];
-
-                    //WSW
-                    interPositions[10] = octants[12];
-                    interPositions[11] = (int)Math.Round(currY - ring);
-
-                    //WNW
-                    interPositions[12] = octants[12];
-                    interPositions[13] = (int)Math.Round(currY + ring);
-
-                    //NNW
-                    interPositions[14] = (int)Math.Round(currX + ring);
-                    interPositions[15] = octants[1];
-
-                    //begin calculating the pixel based on it's position and the two previous positions
-                    calcInter(currX, currY, currZ, interPositions[iter], interPositions[iter + 1],
-                            interOffsets[interOffsetsCounter], interOffsets[interOffsetsCounter + 1],
-                            interOffsets[interOffsetsCounter + 2], interOffsets[interOffsetsCounter + 3]);
-                    interOffsetsCounter += 4;
-                }
-
-                //visibleArray[(int)currY + k - 1, octants[6]] = true;//ENE plane
-
-                //visibleArray[(int)currY - k, octants[6]] = true;//ESE plane
-
-                //visibleArray[octants[9]-2, (int)currX + k] = true;//SSE plane
-
-                //visibleArray[octants[9]-1, (int)currX - k] = true;//SSW plane
-
-                //visibleArray[(int)currY - k, octants[12]] = true;//WSW plane
-
-                //visibleArray[(int)currY + k, octants[12]] = true;//WNW plane
-
-                //visibleArray[octants[1], (int)currX - k + 1] = true;//NNW plane
-            }
-        }
-
-        private void calcInter(double currX, double currY, double currZ, int interX, int interY, int offsetX1, int offsetY1, int offsetX2, int offsetY2)
-        {
-
-            //Update the new offset value based on current position and offset modifier
-            offsetX1 += interX;
-            offsetY1 += interY;
-            offsetX2 += interX;
-            offsetY2 += interY;
-
-
-            //Three phase Max, Min and lerp needed for good accuracy
-            double lerpLOS1 = Math.Max(losArray[offsetY1, offsetX1], losArray[offsetY2, offsetX2]);
-            double lerpLOS2 = Math.Min(losArray[offsetY1, offsetX1], losArray[offsetY2, offsetX2]);
-            double lerpLOS = ((lerpLOS1 + lerpLOS2) / 2);//Insert special fudge sauce [-1,1]
-
-
-            //Distance and elevations to the test point
-            double d = Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
-            double e = ((zArray[(int)interY, (int)interX] - currZ) / d) + 90;
-            double q = interX / interY;
-            //double lerpLOS = (lerpLOS1 + lerpLOS2 + ((lerpLOS2 + lerpLOS1 * q)/2))/3;
-
-            losArray[interY, interX] = (float)e;
-
-            //Trace.WriteLine("elev = " + e);
-            //Trace.WriteLine("Lerp = " + lerpLOS);
-
-            //If the elevation is greater than the interpolated value on the next inner row
-            if (e > lerpLOS)
-            {
-                // Trace.WriteLine("Lerped");
-                visibleArray[interY, interX] = true;//NNE plane
-
-            }
-
+            a.EventGroup.InsertInfoEvent(string.Format(s));
         }
 
         #endregion
