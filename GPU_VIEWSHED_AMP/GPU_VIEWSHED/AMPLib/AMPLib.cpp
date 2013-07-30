@@ -282,7 +282,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				}
 			}
 			
-			else if(idx[0] >= northNorthEastCounter && idx[0] <= northNorthEastCounter+northNorthWestCounter)//NNW
+			else if(idx[0] > northNorthEastCounter && idx[0] <= northNorthEastCounter+northNorthWestCounter)//NNW
 			{
 				int interX = currX - (idx[0] - northNorthEastCounter);
 				int interY = currY + ringCounter;
@@ -340,7 +340,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e =((dataViewZ(interY, interX) - currZ) / d);
 			
 			
-				if(e >= lerpLOS)
+				if(e > lerpLOS)
 				{
 					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
@@ -457,7 +457,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e =((dataViewZ(interY, interX) - currZ) / d);
 			
 			
-				if(e >= lerpLOS)
+				if(e > lerpLOS)
 				{
 					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
@@ -492,7 +492,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e =((dataViewZ(interY, interX) - currZ) / d);
 			
 			
-				if(e >= lerpLOS)
+				if(e > lerpLOS)
 				{
 					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;

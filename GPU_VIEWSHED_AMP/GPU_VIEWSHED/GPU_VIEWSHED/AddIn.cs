@@ -212,11 +212,11 @@ namespace GPU_VIEWSHED
 
             //t.Start();
 
-            //callDDA();
-           // callR3();
+            callDDA();
+            //callR3();
             //callR2();
-
-            callGPU(currX, currY, currZ, "XDRAW");
+            
+            //callGPU(currX, currY, currZ, "XDRAW");
 
             //t.Join();//needs join as the code will send back results without it
             stopwatch.Stop();
@@ -629,7 +629,7 @@ namespace GPU_VIEWSHED
                 float elev = (zArrayFloat[(int)y, (int)x] - focalZ) / dist;
 
                 //elevation check
-                if (elev >= highest)
+                if (elev > highest)
                 {
                     visibleArrayCPU[(int)y, (int)x] = 1;
                     highest = elev;
@@ -745,7 +745,7 @@ namespace GPU_VIEWSHED
                 float elev = (lerpHeight - focalZ) / dist;
 
                 //DO the sightline check
-                if (elev >= highest)
+                if (elev > highest)
                 {
                     visibleArrayCPU[(int)Math.Round(y), (int)Math.Round(x)] = 1;
                     highest = elev;
@@ -872,7 +872,7 @@ namespace GPU_VIEWSHED
                     float elev = (lerpHeight - focalZ) / dist;
 
                     //DO the sightline check
-                    if (elev >= highest)
+                    if (elev > highest)
                     {
                         visibleArrayCPU[(int)Math.Round(y), (int)Math.Round(x)] = 1;
                         //visibleArrayCPU[guessedY, guessedX] = 1;
