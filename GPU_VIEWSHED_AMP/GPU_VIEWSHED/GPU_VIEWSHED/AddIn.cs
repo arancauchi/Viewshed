@@ -216,7 +216,7 @@ namespace GPU_VIEWSHED
             //callR3();
             //callR2();
             
-            callGPU(currX, currY, currZ, "XDRAW");
+            callGPU(currX, currY, currZ, "R2");
 
             //t.Join();//needs join as the code will send back results without it
             stopwatch.Stop();
@@ -385,6 +385,11 @@ namespace GPU_VIEWSHED
                 g = 4;
                 viewshedType = " GPU - R3";
             }
+            else if (gpuType == "R2")
+            {
+                g = 4;
+                viewshedType = " GPU - R2";
+            }
 
 
             //Start Timing
@@ -473,7 +478,7 @@ namespace GPU_VIEWSHED
 
         }
 
-        #region CPU ALGORITHMS DON'T USE - XDRAW IS OLD AND INCOMPLETE
+        #region CPU ALGORITHMS
 
 
 
