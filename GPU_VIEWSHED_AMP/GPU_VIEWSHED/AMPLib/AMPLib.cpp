@@ -38,7 +38,7 @@ using namespace concurrency;
 	dataViewVisible.discard_data();
     // Run code on the GPU
 
-
+	dataViewVisible(currX,currY) = 1;
 
 	parallel_for_each(av, eY, [=] (index<1> idx) restrict(amp)
     {
@@ -117,7 +117,7 @@ using namespace concurrency;
 	});
 		
 
-		parallel_for_each(av, eX, [=] (index<1> idx) restrict(amp)
+	parallel_for_each(av, eX, [=] (index<1> idx) restrict(amp)
     {
 		
 		int destX;
@@ -209,7 +209,7 @@ using namespace concurrency;
 	array_view<int,2> dataViewVisible(visibleArrayY, visibleArrayX, &visibleArray[0,0]);
 	dataViewVisible.discard_data();
     // Run code on the GPU
-
+	dataViewVisible(currX,currY) = 1;
 
 
 	parallel_for_each(av, eY, [=] (index<1> idx) restrict(amp)
@@ -467,7 +467,6 @@ using namespace concurrency;
 
 }
 
-	
 
 
 
@@ -485,7 +484,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 	array_view<float,2> losArrayView(visibleArrayY, visibleArrayX, &losArray[0,0]);
 	
 
-
+	dataViewVisible(currX,currY) = 1;
 
 
 	int ringCounter = RING_COUNTER;//start 2 rings out

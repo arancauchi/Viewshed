@@ -216,7 +216,7 @@ namespace GPU_VIEWSHED
             //callR3();
             //callR2();
             
-            callGPU(currX, currY, currZ, "XDRAW");
+            callGPU(currX, currY, currZ, "R3");
 
             //t.Join();//needs join as the code will send back results without it
             stopwatch.Stop();

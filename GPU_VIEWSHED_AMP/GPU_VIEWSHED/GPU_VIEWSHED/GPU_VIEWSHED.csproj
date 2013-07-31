@@ -42,7 +42,6 @@
     <Reference Include="Myriax.Eonfusion.API, Version=1.0.0.0, Culture=neutral, PublicKeyToken=0bd27b1bb5e51c2d, processorArchitecture=MSIL">
       <Private>False</Private>
     </Reference>
-    <Reference Include="SlimDX, Version=2.0.13.43, Culture=neutral, PublicKeyToken=b1b0c32fd1ffe4f9, processorArchitecture=x86" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
   </ItemGroup>
