@@ -6,7 +6,7 @@
 #include <cstdlib>
 
 
-#define RING_COUNTER 2
+#define RING_COUNTER 1
 #define NORTH_NORTH_EAST_COUNTER 1
 #define NORTH_NORTH_WEST_COUNTER 1
 #define EAST_NORTH_EAST_COUNTER 1
