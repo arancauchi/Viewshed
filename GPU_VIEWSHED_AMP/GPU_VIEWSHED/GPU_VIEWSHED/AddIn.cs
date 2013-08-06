@@ -206,27 +206,29 @@ namespace GPU_VIEWSHED
 
             int currZ = (int)Math.Round(focalZ);
             globalCurrZ = currZ;
+            for (int i = 0; i < 2; i++)
+            {
+                stopwatch.Reset();
+                stopwatch.Start();
 
-            stopwatch.Start();
 
+                //t.Start();
 
-            //t.Start();
+                // callDDA();
+                //callR3();
+                //callR2();
 
-           // callDDA();
-            //callR3();
-            //callR2();
-            
-            callGPU(currX, currY, currZ, "R2");
+                callGPU(currX, currY, currZ, "XDRAW");
 
-            //t.Join();//needs join as the code will send back results without it
-            stopwatch.Stop();
-            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
-            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
+                //t.Join();//needs join as the code will send back results without it
+                stopwatch.Stop();
+                TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+                Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
 
-            //  Copy Visible values from local array to Eon structures.
-            TraceEvent("Sending raster", application);
-            Trace.WriteLine("Sending raster");
-
+                //  Copy Visible values from local array to Eon structures.
+                TraceEvent("Sending raster", application);
+                Trace.WriteLine("Sending raster");
+            }
             demHelper.ProcessVertexWindow2D(0, 0, rasterWidth, rasterHeight, delegate(int rasterIndex, int[] rasterTileOfs, int windowIndexOfs, int[] windowOfs, int spanSize)
             {
                 int windowOfsX = windowOfs[0];
@@ -387,14 +389,14 @@ namespace GPU_VIEWSHED
             }
             else if (gpuType == "R2")
             {
-                g = 4;
+                g = 5;
                 viewshedType = " GPU - R2";
             }
 
 
             //Start Timing
             stopwatch.Start();
-            
+
             fixed (int* visibleArrayPt = &visibleArrayInt[0, 0])
             fixed (float* zArrayPt = &zArrayFloat[0, 0])
             fixed (float* losArrayPt = &losArray[0, 0])
@@ -441,7 +443,7 @@ namespace GPU_VIEWSHED
 
             xIncrement = dx / (float)steps;
             yIncrement = dy / (float)steps;
-            
+
             ///////////////////
             //first point is visible sshouldn't do this everytime!!!!! Move out of line code
             ////////////////////////////
@@ -461,7 +463,7 @@ namespace GPU_VIEWSHED
                 //Elevation to check point
                 float elev = (float)(zArray[(int)Math.Round(y), (int)Math.Round(x)] - focalZ) / dist;
 
-                
+
                 //elevation check
                 if (elev > highest)
                 {
