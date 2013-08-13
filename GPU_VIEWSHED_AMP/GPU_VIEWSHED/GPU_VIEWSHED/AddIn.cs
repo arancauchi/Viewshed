@@ -217,8 +217,8 @@ namespace GPU_VIEWSHED
                 // callDDA();
                 //callR3();
                 //callR2();
-
-                callGPU(currX, currY, currZ, "XDRAW");
+                calculateXDRAW(currX, currY, currZ);
+                // callGPU(currX, currY, currZ, "XDRAW");
 
                 //t.Join();//needs join as the code will send back results without it
                 stopwatch.Stop();
@@ -898,6 +898,481 @@ namespace GPU_VIEWSHED
                 }
             }
         }
+
+
+        private void calculateXDRAW(int currX, int currY, int currZ)
+        {
+	        int ringCounter = 2;//start 2 rings out
+	        int northNorthEastCounter = 1;
+	        int northNorthWestCounter = 1;
+	        int southSouthEastCounter = 1;
+	        int southSouthWestCounter = 1;
+
+	        int eastNorthEastCounter = 1;
+	        int eastSouthEastCounter = 1;
+	        int westNorthWestCounter = 1;
+	        int westSouthWestCounter = 1;
+
+	        //Total size of the ring in X & Y
+	        int maxRingY = Math.Max(rasterHeight - currY - 1 , currY);
+	        int maxRingX = Math.Max(rasterWidth - currX - 1 , currX);
+
+
+            // Precaculate the 8 compass points for use in losArray
+            preCalculateDDA(currX, currY, currZ, currX, rasterHeight - 1);
+            preCalculateDDA(currX, currY, currZ, currX, 0);
+
+            preCalculateDDA(currX, currY, currZ, 0, currY);
+            preCalculateDDA(currX, currY, currZ, rasterWidth - 1, currY);
+
+            int destX, destY;
+            //NW
+            destX = currX - (rasterHeight - currY);
+            destY = rasterHeight - 1;
+            if (destX <= 0)
+            {
+                destY = rasterHeight + destX - 1;
+                destX = 0;
+            }
+            preCalculateDDA(currX, currY, currZ, destX, destY);
+
+
+
+            //SE
+            destX = currX + (rasterHeight - (rasterHeight - currY));
+            destY = 0;
+            if (destX >= rasterWidth - 1)
+            {
+                destY = (destX - rasterWidth - 1);
+                destX = rasterWidth - 1;
+            }
+            preCalculateDDA(currX, currY, currZ, destX, destY);
+
+
+            //SW
+            destX = currX - (rasterHeight - (rasterHeight - currY));
+            destY = 0;
+            if (destX <= 0)
+            {
+                destY = rasterHeight - (rasterHeight + destX - 1);
+                destX = 0;
+            }
+            preCalculateDDA(currX, currY, currZ, destX, destY);
+
+
+            visibleArrayInt[currY - 1, currX] = 1;
+            visibleArrayInt[currY + 1, currX] = 1;
+            visibleArrayInt[currY + 1, currX + 1] = 1;
+            visibleArrayInt[currY, currX + 1] = 1;
+            visibleArrayInt[currY - 1, currX + 1] = 1;
+            visibleArrayInt[currY, currX - 1] = 1;
+            visibleArrayInt[currY + 1, currX - 1] = 1;
+            visibleArrayInt[currY - 1, currX - 1] = 1;
+
+
+
+	        while(ringCounter < maxRingY)
+	        {
+		        int yExtent = northNorthEastCounter+northNorthWestCounter+southSouthEastCounter+southSouthWestCounter + 1;
+
+		        //Get CPU to calculate DDA compass points then send LOSARRAY to GPU
+		        for(int i = 0; i < yExtent; i++)
+		        {
+                    if (currY + ringCounter < rasterHeight)
+                    {
+                        if (i < northNorthEastCounter - 1)//NNE
+                        {
+                            int interX = currX + i + 1;
+                            int interY = currY + ringCounter;
+
+                            int x1 = interX - 1;
+                            int y1 = interY - 1;
+                            int x2 = interX;
+                            int y2 = interY - 1;
+
+                            float leftLos = losArray[y1, x1];
+                            float rightLos = losArray[y2, x2];
+
+                            float losMax = Math.Max(leftLos, rightLos);
+                            float losMin = Math.Max(leftLos, rightLos);
+
+                            //float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interX)) - (x1 - x2) * ((currX * interY)  - (currY * interX)) /
+                            //	((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
+
+                            //float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
+
+                            float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+
+                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+
+                            float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
+                            float e = ((zArrayFloat[interY, interX] - currZ) / d);
+
+
+                            //elevation check
+                            if (e > lerpLOS)
+                            {
+
+                                visibleArrayInt[interY, interX] = 2;
+                                losArray[interY, interX] = e;
+                            }
+                            else
+                            {
+                                losArray[interY, interX] = lerpLOS;
+                            }
+                        }
+                        else if (i > northNorthEastCounter && i <= northNorthEastCounter + northNorthWestCounter)//NNW
+                        {
+                            int interX = currX - (i - northNorthEastCounter);
+                            int interY = currY + ringCounter;
+
+                            int x1 = interX + 1;
+                            int y1 = interY - 1;
+                            int x2 = interX;
+                            int y2 = interY - 1;
+
+                            float leftLos = losArray[y1, x1];
+                            float rightLos = losArray[y2, x2];
+
+                            float losMax = Math.Max(leftLos, rightLos);
+                            float losMin = Math.Max(leftLos, rightLos);
+
+                            //float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interX)) - (x1 - x2) * ((currX * interY)  - (currY * interX)) /
+                            //	((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
+
+                            //float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
+
+                            //float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+
+                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+
+                            float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
+                            float e = ((zArrayFloat[interY, interX] - currZ) / d);
+
+
+                            //elevation check
+                            if (e > lerpLOS)
+                            {
+
+                                visibleArrayInt[interY, interX] = 2;
+                                losArray[interY, interX] = e;
+                            }
+                            else
+                            {
+                                losArray[interY, interX] = lerpLOS;
+                            }
+                        }
+                    }
+                    if (currY - ringCounter > 0)
+                    {
+                        if (i >= northNorthEastCounter + northNorthWestCounter && i <= northNorthEastCounter + northNorthWestCounter + southSouthWestCounter)//SSW
+                        {
+                            int interX = currX - (i - (northNorthEastCounter + northNorthWestCounter));
+                            int interY = currY - ringCounter;
+
+                            int x1 = interX + 1;
+                            int y1 = interY + 1;
+                            int x2 = interX;
+                            int y2 = interY + 1;
+
+                            float leftLos = losArray[y1, x1];
+                            float rightLos = losArray[y2, x2];
+
+                            float losMax = Math.Max(leftLos, rightLos);
+                            float losMin = Math.Max(leftLos, rightLos);
+
+                            //float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interX)) - (x1 - x2) * ((currX * interY)  - (currY * interX)) /
+                            //	((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
+
+                            //float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
+
+                            //float losLerp = rightLos + (leftLos - rightLos) * (interX / (interY +1));//does not work!!!l!l!!
+
+                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+
+                            float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
+                            float e = ((zArrayFloat[interY, interX] - currZ) / d);
+
+
+                            //elevation check
+                            if (e > lerpLOS)
+                            {
+
+                                visibleArrayInt[interY, interX] = 2;
+                                losArray[interY, interX] = e;
+                            }
+                            else
+                            {
+                                losArray[interY, interX] = lerpLOS;
+                            }
+                        }
+                        else if (i >= northNorthEastCounter + northNorthWestCounter + southSouthWestCounter && i < northNorthEastCounter + northNorthWestCounter + southSouthWestCounter + southSouthEastCounter)//SSE
+                        {
+                            int interX = currX + (i - (northNorthEastCounter + northNorthWestCounter + southSouthWestCounter));
+                            int interY = currY - ringCounter;
+
+                            int x1 = interX - 1;
+                            int y1 = interY + 1;
+                            int x2 = interX;
+                            int y2 = interY + 1;
+
+                            float leftLos = losArray[y1, x1];
+                            float rightLos = losArray[y2, x2];
+
+                            float losMax = Math.Max(leftLos, rightLos);
+                            float losMin = Math.Max(leftLos, rightLos);
+
+                            //float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interX)) - (x1 - x2) * ((currX * interY)  - (currY * interX)) /
+                            //	((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
+
+                            //float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
+
+                            float losLerp = rightLos + (leftLos - rightLos) * (interX / (interY + 1));//does not work!!!l!l!!
+
+                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+
+                            float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
+                            float e = ((zArrayFloat[interY, interX] - currZ) / d);
+
+
+                            //elevation check
+                            if (e > lerpLOS)
+                            {
+
+                                visibleArrayInt[interY, interX] = 2;
+                                losArray[interY, interX] = e;
+                            }
+                            else
+                            {
+                                losArray[interY, interX] = lerpLOS;
+                            }
+
+                        }
+                    }
+
+                }
+
+                int xExtent = eastNorthEastCounter + eastSouthEastCounter + westNorthWestCounter + westSouthWestCounter + 1;
+
+                //Get CPU to calculate DDA compass points then send LOSARRAY to GPU
+                for (int i = 0; i < yExtent; i++)
+                {
+                    if (currX + ringCounter < rasterWidth)
+                    {
+                        if (i < eastNorthEastCounter - 1)//ENE
+                        {
+                            int interY = currY + i + 1;
+                            int interX = currX + ringCounter;
+
+                            int x1 = interX - 1;
+                            int y1 = interY;
+                            int x2 = interX - 1;
+                            int y2 = interY - 1;
+
+                            float leftLos = losArray[y1, x1];
+                            float rightLos = losArray[y2, x2];
+
+                            float losMax = Math.Max(leftLos, rightLos);
+                            float losMin = Math.Max(leftLos, rightLos);
+
+                            //float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interX)) - (x1 - x2) * ((currX * interY)  - (currY * interX)) /
+                            //	((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
+
+                            //float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
+
+                            float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+
+                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+
+                            float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
+                            float e = ((zArrayFloat[interY, interX] - currZ) / d);
+
+
+                            //elevation check
+                            if (e > lerpLOS)
+                            {
+
+                                visibleArrayInt[interY, interX] = 2;
+                                losArray[interY, interX] = e;
+                            }
+                            else
+                            {
+                                losArray[interY, interX] = lerpLOS;
+                            }
+                        }
+                        else if (i > eastNorthEastCounter && i <= eastNorthEastCounter + eastSouthEastCounter)//NNW
+                        {
+
+                            int interY = currY - (i - eastNorthEastCounter);
+                            int interX = currX + ringCounter;
+
+                            int x1 = interX - 1;
+                            int y1 = interY;
+                            int x2 = interX - 1;
+                            int y2 = interY + 1;
+
+                            float leftLos = losArray[y1, x1];
+                            float rightLos = losArray[y2, x2];
+
+                            float losMax = Math.Max(leftLos, rightLos);
+                            float losMin = Math.Max(leftLos, rightLos);
+
+                            //float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interX)) - (x1 - x2) * ((currX * interY)  - (currY * interX)) /
+                            //	((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
+
+                            //float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
+
+                            //float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+
+                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+
+                            float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
+                            float e = ((zArrayFloat[interY, interX] - currZ) / d);
+
+
+                            //elevation check
+                            if (e > lerpLOS)
+                            {
+
+                                visibleArrayInt[interY, interX] = 2;
+                                losArray[interY, interX] = e;
+                            }
+                            else
+                            {
+                                losArray[interY, interX] = lerpLOS;
+                            }
+                        }
+                    }
+                    if (currX - ringCounter > 0)
+                    {
+			            if(i >= eastNorthEastCounter+eastSouthEastCounter && i <= eastNorthEastCounter+eastSouthEastCounter+westSouthWestCounter 
+				        &&  currX - ringCounter > 0)//WSW
+			            {
+				            int interY = currY - (i - (eastNorthEastCounter + eastSouthEastCounter));
+				            int interX = currX - ringCounter;
+
+				            int x1 = interX + 1;
+				            int y1 = interY + 1;
+				            int x2 = interX + 1;
+				            int y2 = interY;
+
+                            float leftLos = losArray[y1, x1];
+                            float rightLos = losArray[y2, x2];
+
+                            float losMax = Math.Max(leftLos, rightLos);
+                            float losMin = Math.Max(leftLos, rightLos);
+
+                            //float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interX)) - (x1 - x2) * ((currX * interY)  - (currY * interX)) /
+                            //	((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
+
+                            //float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
+
+                            //float losLerp = rightLos + (leftLos - rightLos) * (interX / (interY +1));//does not work!!!l!l!!
+
+                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+
+                            float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
+                            float e = ((zArrayFloat[interY, interX] - currZ) / d);
+
+
+                            //elevation check
+                            if (e > lerpLOS)
+                            {
+
+                                visibleArrayInt[interY, interX] = 2;
+                                losArray[interY, interX] = lerpLOS;
+                            }
+                            else
+                            {
+                                losArray[interY, interX] = e;
+                            }
+                        }
+                        if (i >= eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter
+                            && i <= eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter + westNorthWestCounter && currX - ringCounter > 0)//WNW
+                        {
+                            int interY = currY + (i - (eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter));
+                            int interX = currX - ringCounter;
+
+                            int x1 = interX + 1;
+                            int y1 = interY - 1;
+                            int x2 = interX + 1;
+                            int y2 = interY;
+
+                            float leftLos = losArray[y1, x1];
+                            float rightLos = losArray[y2, x2];
+
+                            float losMax = Math.Max(leftLos, rightLos);
+                            float losMin = Math.Max(leftLos, rightLos);
+
+                            //float losLerpX = (((x1 * y2) - (y1 * x2)) * (currX * interX)) - (x1 - x2) * ((currX * interY)  - (currY * interX)) /
+                            //	((x1 - x2)*(currY - interY)) - ((y1 - y2) * (currX - interX));
+
+                            //float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
+
+                            float losLerp = rightLos + (leftLos - rightLos) * (interX / (interY + 1));//does not work!!!l!l!!
+
+                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+
+                            float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
+                            float e = ((zArrayFloat[interY, interX] - currZ) / d);
+
+
+                            //elevation check
+                            if (e > lerpLOS)
+                            {
+
+                                visibleArrayInt[interY, interX] = 2;
+                                losArray[interY, interX] = e;
+                            }
+                            else
+                            {
+                                losArray[interY, interX] = lerpLOS;
+                            }
+
+                        }
+                    }
+
+                }
+
+
+                //ALL THIS IS KINDA FUDGED, figure out real values
+                //If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
+                if (currY + northNorthEastCounter < rasterHeight - 1)
+                {
+                    eastNorthEastCounter++;
+                    westNorthWestCounter++;
+                }
+
+                //If the northNorthWestCounter hasn't hit the Western boundary of the DEM
+                if (currY - northNorthWestCounter > 1)
+                {
+                    eastSouthEastCounter++;
+                    westSouthWestCounter++;
+                }
+
+
+
+                //If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
+                if (currX + northNorthEastCounter < rasterWidth - 1)
+                {
+                    northNorthEastCounter++;
+                    southSouthEastCounter++;
+                }
+
+                //If the northNorthWestCounter hasn't hit the Western boundary of the DEM
+                if (currX - northNorthWestCounter > 1)
+                {
+                    northNorthWestCounter++;
+                    southSouthWestCounter++;
+                }
+
+
+
+                ringCounter++;
+            }
+
+        }
+
 
         //Trace an Eonfusion event
         private void TraceEvent(String s, IApplication a)
