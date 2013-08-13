@@ -217,8 +217,8 @@ namespace GPU_VIEWSHED
                 // callDDA();
                 //callR3();
                 //callR2();
-                calculateXDRAW(currX, currY, currZ);
-                // callGPU(currX, currY, currZ, "XDRAW");
+                //calculateXDRAW(currX, currY, currZ);
+                 callGPU(currX, currY, currZ, "XDRAW");
 
                 //t.Join();//needs join as the code will send back results without it
                 stopwatch.Stop();

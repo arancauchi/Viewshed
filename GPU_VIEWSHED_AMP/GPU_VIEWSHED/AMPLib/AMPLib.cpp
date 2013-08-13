@@ -789,7 +789,7 @@ void calcR2(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 
 
-void calcXdrawTiled(float* zArray, int zArrayLengthX, int zArrayLengthY, 
+void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY, 
 					int* visibleArray, int visibleArrayX, int visibleArrayY, int currX, int currY, int currZ,
 					int rasterWidth, int rasterHeight, float* losArray)
 {
@@ -948,10 +948,10 @@ void calcXdrawTiled(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
-			
-			else if(idx.global[0] >= northNorthEastCounter+northNorthWestCounter+southSouthWestCounter && idx.global[0] <= northNorthEastCounter+northNorthWestCounter+southSouthWestCounter+southSouthEastCounter)//SSE
+
+			else if(idx.global[0] >= northNorthEastCounter+northNorthWestCounter+southSouthWestCounter && idx.global[0] < northNorthEastCounter+northNorthWestCounter+southSouthWestCounter+southSouthEastCounter)//SSE
 			{
-				int interX = currX + (idx.global[0] - (northNorthEastCounter + northNorthWestCounter+southSouthWestCounter));
+				int interX = currX + (idx.global[0] - (northNorthEastCounter + northNorthWestCounter + southSouthWestCounter));
 				int interY = currY - ringCounter;
 
 				int vert1X = interX - 1;
@@ -992,11 +992,11 @@ void calcXdrawTiled(float* zArray, int zArrayLengthX, int zArrayLengthY,
 		});
 
 		extent<1> xExtent(eastNorthEastCounter+eastSouthEastCounter+westNorthWestCounter+westSouthWestCounter + 1);
-		
+
 		//Get CPU to calculate DDA compass points then send LOSARRAY to GPU
 		parallel_for_each(av, xExtent.tile<256>().pad(),  [=] (tiled_index<256>idx) restrict(amp)
 		{
-			
+
 			if(idx.global[0] < eastNorthEastCounter &&  currX + ringCounter < rasterWidth)//ENE
 			{
 				int interY = currY + idx.global[0] + 1;
@@ -1036,7 +1036,7 @@ void calcXdrawTiled(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
-			
+
 			else if(idx.global[0] > eastNorthEastCounter && idx.global[0] <= eastNorthEastCounter+eastSouthEastCounter &&  currX + ringCounter < rasterWidth)//ESE
 			{
 				int interY = currY - (idx.global[0] - eastNorthEastCounter);
@@ -1075,6 +1075,7 @@ void calcXdrawTiled(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, ((e - lerpLOS)*d) + fast_math::fabsf(e));
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
+
 			}
 			else if(idx.global[0] >= eastNorthEastCounter+eastSouthEastCounter && idx.global[0] <= eastNorthEastCounter+eastSouthEastCounter+westSouthWestCounter 
 				&&  currX - ringCounter > 0)//WSW
@@ -1086,7 +1087,7 @@ void calcXdrawTiled(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				int vert1Y = interY + 1;
 				int vert2X = interX + 1;
 				int vert2Y = interY;
-				
+
 				tile_static float los[256][2];
 
 				los[idx.local[0]][0] = losArrayView(vert1Y, vert1X);
@@ -1157,52 +1158,53 @@ void calcXdrawTiled(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 
 			}
-			
-			
-
-	});
 
 
 
-	//ALL THIS IS KINDA FUDGED, figure out real values
-	//If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
-	if(currY + northNorthEastCounter  < rasterHeight )
-	{
-		eastNorthEastCounter++;
-		westNorthWestCounter++;
+		});
+
+
+
+		//ALL THIS IS KINDA FUDGED, figure out real values
+		//If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
+		if(currY + northNorthEastCounter  < rasterHeight )
+		{
+			eastNorthEastCounter++;
+			westNorthWestCounter++;
+		}
+
+		//If the northNorthWestCounter hasn't hit the Western boundary of the DEM
+		if(currY - northNorthWestCounter  > 0)
+		{
+			eastSouthEastCounter++;
+			westSouthWestCounter++;
+		}
+
+
+
+		//If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
+		if(currX + northNorthEastCounter  < rasterWidth )
+		{
+			northNorthEastCounter++;
+			southSouthEastCounter++;
+		}
+
+		//If the northNorthWestCounter hasn't hit the Western boundary of the DEM
+		if(currX - northNorthWestCounter  > 0)
+		{
+			northNorthWestCounter++;
+			southSouthWestCounter++;
+		}
+
+
+
+		ringCounter++;
+
 	}
+	av.wait();
 
-	//If the northNorthWestCounter hasn't hit the Western boundary of the DEM
-	if(currY - northNorthWestCounter  > 0)
-	{
-		eastSouthEastCounter++;
-		westSouthWestCounter++;
-	}
-
-
-
-	//If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
-	if(currX + northNorthEastCounter  < rasterWidth )
-	{
-		northNorthEastCounter++;
-		southSouthEastCounter++;
-	}
-
-	//If the northNorthWestCounter hasn't hit the Western boundary of the DEM
-	if(currX - northNorthWestCounter  > 0)
-	{
-		northNorthWestCounter++;
-		southSouthWestCounter++;
-	}
-
-
-
-	ringCounter++;
-	//av.wait();
-
-}
-losArrayView.discard_data();
-dataViewZ.discard_data();
+	losArrayView.discard_data();
+	dataViewZ.discard_data();
 
 }
 
@@ -1603,7 +1605,7 @@ extern "C" __declspec ( dllexport )
 
 	if (gpuType == XDRAW)
 	{	
-		calcXdrawTiled(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
+		calcXdrawOptim(zArray, zArrayLengthX, zArrayLengthY,  visibleArray,  visibleArrayX,
 			visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight, losArray);
 	}
 	else if (gpuType == DDA)
