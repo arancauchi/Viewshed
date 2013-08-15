@@ -18,6 +18,7 @@ using Add_in1;
 
 
 
+
 namespace GPU_VIEWSHED
 {
     public class ViewshedAddIn : IAddIn
@@ -59,6 +60,8 @@ namespace GPU_VIEWSHED
 
         int rasterWidth, rasterHeight;
         int globalCurrX, globalCurrY, globalCurrZ;
+
+        VisiblePoints vp;
 
         Stopwatch stopwatch;
 
@@ -206,6 +209,9 @@ namespace GPU_VIEWSHED
 
             int currZ = (int)Math.Round(focalZ);
             globalCurrZ = currZ;
+
+            
+            vp= new VisiblePoints();
             for (int i = 0; i < 2; i++)
             {
                 stopwatch.Reset();
@@ -214,11 +220,11 @@ namespace GPU_VIEWSHED
 
                 //t.Start();
 
-                // callDDA();
+                //callDDA();
                 //callR3();
                 //callR2();
-                //calculateXDRAW(currX, currY, currZ);
-                 callGPU(currX, currY, currZ, "XDRAW");
+                calculateXDRAW(currX, currY, currZ);
+                // callGPU(currX, currY, currZ, "XDRAW");
 
                 //t.Join();//needs join as the code will send back results without it
                 stopwatch.Stop();
@@ -238,11 +244,19 @@ namespace GPU_VIEWSHED
                 {
 
                     demVertexTable[rasterIndex + i].VisibleInt = visibleArrayCPU[windowOfsY, windowOfsX + i] + visibleArrayInt[windowOfsY, windowOfsX + i];
+                    if (visibleArrayCPU[windowOfsY, windowOfsX + i] + visibleArrayInt[windowOfsY, windowOfsX + i] > 0)
+                    {
+                        vp.setVisiblePoints(1);
+                    }
 
                 }
             });
             TraceEvent("Finished Sending Raster", application);
             Trace.WriteLine("Finished Sending Raster");
+            int totalPoints = rasterWidth * rasterHeight;
+            int visiblePoints = vp.getVisiblepoints();
+            Trace.WriteLine("Visible/Total points: " + visiblePoints + " / " + totalPoints );
+            Trace.WriteLine("Percentage of total: " + (float)((float)visiblePoints / (float)totalPoints) * 100);
 
             return application.InputDatasets[0];
         }

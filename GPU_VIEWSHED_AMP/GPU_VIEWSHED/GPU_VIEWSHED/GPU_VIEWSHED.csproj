@@ -47,6 +47,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AddIn.cs" />
+    <Compile Include="VisiblePoints.cs" />
     <Compile Include="DEMRaster.cs" />
     <Compile Include="DEMRaster.Designer.cs">
       <DependentUpon>DEMRaster.cs</DependentUpon>
