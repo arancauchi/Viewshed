@@ -56,6 +56,8 @@ namespace GPU_VIEWSHED
         //Array of previous Lines of Sights for the Octants calculation
         double[] prevLOS = { -999, -999, -999, -999, -999, -999, -999, -999 };
 
+        double focalX, focalY, focalZ;
+
         int[] octants = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
         int rasterWidth, rasterHeight;
@@ -72,7 +74,7 @@ namespace GPU_VIEWSHED
         public IDataset Execute(IApplication application)
         {
             stopwatch = new Stopwatch();
-
+            Thread t = new Thread(calculateXDRAW);          // Kick off a new thread
             DEMRaster demRaster = application.InputDatasets.BindData(DEMBindProperty);
             FocalPointVectors focalPointVectors = application.InputDatasets.BindData(FocalPointBindProperty);
 
@@ -84,13 +86,13 @@ namespace GPU_VIEWSHED
             }
 
             FocalPointVectorsVertex focalVertex = focalPointVectors.VertexTable.SelectAll()[0];
-            double focalX = focalVertex.X;
-            double focalY = focalVertex.Y;
-            double focalZ = focalVertex.Z;
+            focalX = focalVertex.X;
+            focalY = focalVertex.Y;
+            focalZ = focalVertex.Z;
 
             application.EventGroup.InsertInfoEvent(string.Format("Focal point is ({0}, {1}).", focalX, focalY));
-            //Thread t = new Thread(callDDA);          // Kick off a new thread
 
+            
 
 
 
@@ -212,21 +214,22 @@ namespace GPU_VIEWSHED
 
 
             vp = new VisiblePoints();
-            for (int i = 0; i < 2; i++)
+            for (int i = 0; i < 1; i++)
             {
                 stopwatch.Reset();
                 stopwatch.Start();
-
+                
 
                 //t.Start();
 
                 //callDDA();
-                //callR3();
+                callR3();
                 //callR2();
-                calculateXDRAW(currX, currY, currZ);
+                //calculateXDRAW();
                 // callGPU(currX, currY, currZ, "XDRAW");
 
-                //t.Join();//needs join as the code will send back results without it
+               // t.Join();//needs join as the code will send back results without it
+
                 stopwatch.Stop();
                 TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
                 Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
@@ -242,7 +245,6 @@ namespace GPU_VIEWSHED
 
                 for (int i = 0; i < spanSize; ++i)
                 {
-
                     demVertexTable[rasterIndex + i].VisibleInt = visibleArrayCPU[windowOfsY, windowOfsX + i] + visibleArrayInt[windowOfsY, windowOfsX + i];
                     if (visibleArrayCPU[windowOfsY, windowOfsX + i] + visibleArrayInt[windowOfsY, windowOfsX + i] > 0)
                     {
@@ -910,8 +912,12 @@ namespace GPU_VIEWSHED
         }
 
 
-        private void calculateXDRAW(int currX, int currY, int currZ)
+        private void calculateXDRAW()
         {
+
+            int currX = (int)focalX;
+            int currY = (int)focalY;
+            int currZ = (int)focalZ;
             int ringCounter = 1;//start 2 rings out
             int northNorthEastCounter = 1;
             int northNorthWestCounter = 1;
