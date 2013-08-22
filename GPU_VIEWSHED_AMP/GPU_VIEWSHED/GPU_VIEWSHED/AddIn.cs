@@ -269,18 +269,18 @@ namespace GPU_VIEWSHED
                 stopwatch.Start();
 
 
-                threadCPU.Start();
-                threadGPU.Start();
+                //threadCPU.Start();
+                //threadGPU.Start();
 
 
                 //callDDA();
                 //callR3();
                 //callR2();
-                //calculateXDRAW();
-                //callGPU(currX, currY, currZ, "DDA");
+                calculateXDRAW(currX,currY,currZ);
+                //callGPU(currX, currY, currZ, "R2");
 
-                threadCPU.Join();//needs join as the code will send back results without it
-                threadGPU.Join();
+                //threadCPU.Join();//needs join as the code will send back results without it
+                //threadGPU.Join();
 
 
                 stopwatch.Stop();
@@ -564,7 +564,7 @@ namespace GPU_VIEWSHED
                 //elevation check
                 if (elev > highest)
                 {
-                    visibleArrayCPU[(int)y, (int)x] += 1;
+                    //visibleArrayCPU[(int)y, (int)x] = 1;
                     highest = elev;
                     losArray[(int)Math.Round(y), (int)Math.Round(x)] = elev;
                 }
@@ -1113,7 +1113,7 @@ namespace GPU_VIEWSHED
 
                             float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+                            float lerpLOS = (losMin *2 + losMax) / 3;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
@@ -1154,7 +1154,7 @@ namespace GPU_VIEWSHED
 
                             //float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-                            float lerpLOS = (losMin + losMax) / 2;
+                            float lerpLOS = (losMin * 2 + losMax) / 3;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
@@ -1198,7 +1198,7 @@ namespace GPU_VIEWSHED
 
                             //float losLerp = rightLos + (leftLos - rightLos) * (interX / (interY +1));//does not work!!!l!l!!
 
-                            float lerpLOS = (losMin + losMax) / 2;
+                            float lerpLOS = (losMin * 2 + losMax) / 3;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
@@ -1239,7 +1239,7 @@ namespace GPU_VIEWSHED
 
                             float losLerp = rightLos + (leftLos - rightLos) * (interX / (interY + 1));//does not work!!!l!l!!
 
-                            float lerpLOS = (losMin + losMax) / 2;
+                            float lerpLOS = (losMin * 2 + losMax) / 3;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
@@ -1292,7 +1292,7 @@ namespace GPU_VIEWSHED
 
                             float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-                            float lerpLOS = (losMin + losMax) / 2;
+                            float lerpLOS = (losMin * 2 + losMax) / 3;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
@@ -1333,7 +1333,7 @@ namespace GPU_VIEWSHED
 
                             //float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-                            float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+                            float lerpLOS = (losMin * 2 + losMax) / 3;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
@@ -1378,7 +1378,7 @@ namespace GPU_VIEWSHED
 
                             //float losLerp = rightLos + (leftLos - rightLos) * (interX / (interY +1));//does not work!!!l!l!!
 
-                            float lerpLOS = (losMin + losMax) / 2;
+                            float lerpLOS = (losMin * 2 + losMax) / 3; 
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
@@ -1420,7 +1420,7 @@ namespace GPU_VIEWSHED
 
                             float losLerp = rightLos + (leftLos - rightLos) * (interX / (interY + 1));//does not work!!!l!l!!
 
-                            float lerpLOS = (losMin + losMax) / 2;
+                            float lerpLOS = (losMin * 2 + losMax) / 3;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
