@@ -39,28 +39,28 @@ namespace GPU_VIEWSHED
 
 
         //Array of heights for each pixel
-        static double[,] zArray;
-        static float[,] zArrayFloat;
+        double[,] zArray;
+        float[,] zArrayFloat;
 
         //Array for the XDraw LOS values for each pixel
-        static float[,] losArray;
+        float[,] losArray;
 
         //Array of visible pixels to be parsed out
-        static bool[,] visibleArray;
-        static int[,] visibleArrayInt;
-        static int[,] visibleArrayCPU;
+        bool[,] visibleArray;
+        int[,] visibleArrayInt;
+        int[,] visibleArrayCPU;
 
         //Array of vertices which have been visited
-        static bool[,] visitedArray;
+        bool[,] visitedArray;
 
         //Array of previous Lines of Sights for the Octants calculation
         double[] prevLOS = { -999, -999, -999, -999, -999, -999, -999, -999 };
 
-        static double focalX, focalY, focalZ;
+        double focalX, focalY, focalZ;
 
         int[] octants = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-        static int rasterWidth, rasterHeight;
+        int rasterWidth, rasterHeight;
         int globalCurrX, globalCurrY, globalCurrZ;
 
         VisiblePoints vp;
@@ -68,30 +68,13 @@ namespace GPU_VIEWSHED
         Stopwatch stopwatch;
 
         //String holding the viewshed type used during trace events
-        static String viewshedType;
+        String viewshedType;
 
-        static Stack<FocalPointStruct> _stack;
-        static long _totalCPU;
-        static long _totalGPU;
-        struct FocalPointStruct
-        {
-            public int x;
-            public int y;
-            public int z;
-            public FocalPointStruct(int x1, int y1, int z1) 
-           {
-              this.x = x1;
-              this.y = y1;
-              this.z = z1;
-           }
-        };
 
         public IDataset Execute(IApplication application)
         {
             stopwatch = new Stopwatch();
-
-
-            Trace.WriteLine(GC.GetTotalMemory(true));
+            Thread t = new Thread(calculateXDRAW);          // Kick off a new thread
             DEMRaster demRaster = application.InputDatasets.BindData(DEMBindProperty);
             FocalPointVectors focalPointVectors = application.InputDatasets.BindData(FocalPointBindProperty);
 
@@ -102,7 +85,6 @@ namespace GPU_VIEWSHED
                 throw new AddInException("No focal point found.");
             }
 
-
             FocalPointVectorsVertex focalVertex = focalPointVectors.VertexTable.SelectAll()[0];
             focalX = focalVertex.X;
             focalY = focalVertex.Y;
@@ -110,38 +92,7 @@ namespace GPU_VIEWSHED
 
             application.EventGroup.InsertInfoEvent(string.Format("Focal point is ({0}, {1}).", focalX, focalY));
 
-
-
-            _stack = new Stack<FocalPointStruct>();
-            _stack.Push(new FocalPointStruct(400, 400, 800));
-            _stack.Push(new FocalPointStruct(1500, 450, 800));
-            _stack.Push(new FocalPointStruct(400, 500, 800));
-            _stack.Push(new FocalPointStruct(1500, 550, 800));
-            _stack.Push(new FocalPointStruct(400, 400, 800));
-            _stack.Push(new FocalPointStruct(1500, 450, 800));
-            _stack.Push(new FocalPointStruct(400, 500, 800));
-            _stack.Push(new FocalPointStruct(1500, 550, 800));
-            _stack.Push(new FocalPointStruct(400, 400, 800));
-            _stack.Push(new FocalPointStruct(1500, 450, 800));
-            _stack.Push(new FocalPointStruct(400, 500, 800));
-            _stack.Push(new FocalPointStruct(1500, 550, 800));
-            _stack.Push(new FocalPointStruct(400, 400, 800));
-            _stack.Push(new FocalPointStruct(1500, 450, 800));
-            _stack.Push(new FocalPointStruct(400, 500, 800));
-            _stack.Push(new FocalPointStruct(1500, 550, 800));
-            _stack.Push(new FocalPointStruct(400, 400, 800));
-            _stack.Push(new FocalPointStruct(1500, 450, 800));
-            _stack.Push(new FocalPointStruct(400, 500, 800));
-            _stack.Push(new FocalPointStruct(1500, 550, 800));
-            _stack.Push(new FocalPointStruct(400, 400, 800));
-            _stack.Push(new FocalPointStruct(1500, 450, 800));
-            _stack.Push(new FocalPointStruct(400, 500, 800));
-            _stack.Push(new FocalPointStruct(1500, 550, 800));
-
-
-
-            Thread threadCPU = new Thread(ProcessQueueCPU);          // Kick off a new thread
-            Thread threadGPU = new Thread(ProcessQueueGPU);          // Kick off a new thread
+            
 
 
 
@@ -269,19 +220,15 @@ namespace GPU_VIEWSHED
                 stopwatch.Start();
                 
 
-                threadCPU.Start();
-                threadGPU.Start();
-
+                //t.Start();
 
                 //callDDA();
-                //callR3();
-               //callR2();
+                callR3();
+                //callR2();
                 //calculateXDRAW();
-                //callGPU(currX, currY, currZ, "DDA");
+                // callGPU(currX, currY, currZ, "XDRAW");
 
-               threadCPU.Join();//needs join as the code will send back results without it
-               threadGPU.Join();
-
+               // t.Join();//needs join as the code will send back results without it
 
                 stopwatch.Stop();
                 TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
@@ -312,7 +259,6 @@ namespace GPU_VIEWSHED
             int visiblePoints = vp.getVisiblepoints();
             Trace.WriteLine("Visible/Total points: " + visiblePoints + " / " + totalPoints);
             Trace.WriteLine("Percentage of total: " + (float)((float)visiblePoints / (float)totalPoints) * 100);
-            Trace.WriteLine("CPU Viewsheds processed: " + _totalCPU + " GPU Viewsheds processed: " + _totalGPU);
 
             return application.InputDatasets[0];
         }
@@ -321,39 +267,9 @@ namespace GPU_VIEWSHED
 
 
 
-        static void ProcessQueueCPU()
-        {
-            try
-            {
-                while (true)
-                {
-                    FocalPointStruct f = _stack.Pop();
-                    Trace.WriteLine("Processing CPU focii" + f.x + " " + f.y + " " +f.z + " on thread " + Thread.CurrentThread.ManagedThreadId);
-                    calculateXDRAW(f.x,f.y,f.z);
-                    _totalCPU++;
-                    
-                }
-            }
-            catch (InvalidOperationException) { }
-        }
-        static void ProcessQueueGPU()
-        {
-            try
-            {
-                while (true)
-                {
-                    FocalPointStruct f = _stack.Pop();
-                    Trace.WriteLine("Processing GPU focii" + f.x + " " + f.y + " " + f.z + " on thread " + Thread.CurrentThread.ManagedThreadId);
-                    callGPU(f.x, f.y, f.z, "XDRAW");
-                    _totalGPU++;
 
-                }
-            }
-            catch (InvalidOperationException) { }
-        }
-   
 
-        private static unsafe void callGPU(int currX, int currY, int currZ, string gpuType)
+        private unsafe void callGPU(int currX, int currY, int currZ, string gpuType)
         {
             //which gpu option to choose
             int g = 1;
@@ -495,7 +411,7 @@ namespace GPU_VIEWSHED
 
 
             //Start Timing
-           // stopwatch.Start();
+            stopwatch.Start();
 
             fixed (int* visibleArrayPt = &visibleArrayInt[0, 0])
             fixed (float* zArrayPt = &zArrayFloat[0, 0])
@@ -505,11 +421,11 @@ namespace GPU_VIEWSHED
                     currX, currY, currZ, rasterWidth, rasterHeight, losArrayPt, g);
 
             //Stop Timing
-           // stopwatch.Stop();
+            stopwatch.Stop();
 
         }
 
-        static private void preCalculateDDA(int focalX, int focalY, int focalZ, int destinationX, int destinationY)
+        private void preCalculateDDA(int focalX, int focalY, int focalZ, int destinationX, int destinationY)
         {
 
             int destX = destinationX;
@@ -564,7 +480,7 @@ namespace GPU_VIEWSHED
                 //elevation check
                 if (elev > highest)
                 {
-                    visibleArrayCPU[(int)y, (int)x] += 1;
+                    visibleArrayCPU[(int)y, (int)x] = 1;
                     highest = elev;
                     losArray[(int)Math.Round(y), (int)Math.Round(x)] = elev;
                 }
@@ -986,8 +902,8 @@ namespace GPU_VIEWSHED
                         //visibleArrayCPU[guessedY, guessedX] = 1;
                         highest = elev;
                     }
-                    visitedArray[guessedY, guessedX] = true;
-                    //visitedArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
+                    // visitedArray[guessedY, guessedX] = true;
+                    visitedArray[(int)Math.Round(y), (int)Math.Round(x)] = true;
 
 
 
@@ -996,13 +912,12 @@ namespace GPU_VIEWSHED
         }
 
 
-
-        public static void calculateXDRAW(int fx, int fy, int fz)
+        private void calculateXDRAW()
         {
 
-            int currX = fx;
-            int currY = fy;
-            int currZ = fz;
+            int currX = (int)focalX;
+            int currY = (int)focalY;
+            int currZ = (int)focalZ;
             int ringCounter = 1;//start 2 rings out
             int northNorthEastCounter = 1;
             int northNorthWestCounter = 1;
@@ -1123,7 +1038,7 @@ namespace GPU_VIEWSHED
                             if (e > lerpLOS)
                             {
 
-                                visibleArrayCPU[interY, interX] += 1;
+                                visibleArrayInt[interY, interX] = 2;
                                 losArray[interY, interX] = e;
                             }
                             else
@@ -1164,7 +1079,7 @@ namespace GPU_VIEWSHED
                             if (e > lerpLOS)
                             {
 
-                                visibleArrayCPU[interY, interX] += 1;
+                                visibleArrayInt[interY, interX] = 2;
                                 losArray[interY, interX] = e;
                             }
                             else
@@ -1208,7 +1123,7 @@ namespace GPU_VIEWSHED
                             if (e > lerpLOS)
                             {
 
-                                visibleArrayCPU[interY, interX] += 1;
+                                visibleArrayInt[interY, interX] = 2;
                                 losArray[interY, interX] = e;
                             }
                             else
@@ -1249,7 +1164,7 @@ namespace GPU_VIEWSHED
                             if (e > lerpLOS)
                             {
 
-                                visibleArrayCPU[interY, interX] += 1;
+                                visibleArrayInt[interY, interX] = 2;
                                 losArray[interY, interX] = e;
                             }
                             else
@@ -1267,7 +1182,7 @@ namespace GPU_VIEWSHED
                 //Get CPU to calculate DDA compass points then send LOSARRAY to GPU
                 for (int i = 0; i < yExtent; i++)
                 {
-                    if (currX + ringCounter < rasterWidth -1 )
+                    if (currX + ringCounter < rasterWidth)
                     {
                         if (i < eastNorthEastCounter)//ENE
                         {
@@ -1301,7 +1216,7 @@ namespace GPU_VIEWSHED
                             //elevation check
                             if (e > lerpLOS)
                             {
-                                visibleArrayCPU[interY, interX] += 1;
+                                visibleArrayInt[interY, interX] = 2;
                                 losArray[interY, interX] = e;
                             }
                             else
@@ -1309,7 +1224,7 @@ namespace GPU_VIEWSHED
                                 losArray[interY, interX] = lerpLOS;
                             }
                         }
-                        else if (i > eastNorthEastCounter && i <= eastNorthEastCounter + eastSouthEastCounter && currX - ringCounter > 0)//WNW
+                        else if (i > eastNorthEastCounter && i <= eastNorthEastCounter + eastSouthEastCounter)//NNW
                         {
 
                             int interY = currY - (i - eastNorthEastCounter);
@@ -1343,7 +1258,7 @@ namespace GPU_VIEWSHED
                             if (e > lerpLOS)
                             {
 
-                                visibleArrayCPU[interY, interX] += 1;
+                                visibleArrayInt[interY, interX] = 2;
                                 losArray[interY, interX] = e;
                             }
                             else
@@ -1388,7 +1303,7 @@ namespace GPU_VIEWSHED
                             if (e > lerpLOS)
                             {
 
-                                visibleArrayCPU[interY, interX] += 1;
+                                visibleArrayInt[interY, interX] = 2;
                                 losArray[interY, interX] = e;
                             }
                             else
@@ -1430,7 +1345,7 @@ namespace GPU_VIEWSHED
                             if (e > lerpLOS)
                             {
 
-                                visibleArrayCPU[interY, interX] += 1; 
+                                visibleArrayInt[interY, interX] = 2;
                                 losArray[interY, interX] = e;
                             }
                             else

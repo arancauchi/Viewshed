@@ -490,7 +490,7 @@ void calcR2(float* zArray, int zArrayLengthX, int zArrayLengthY,
 	// Run code on the GPU
 	dataViewVisible(currX,currY) = 1;
 
-	/*
+
 	parallel_for_each(av, eY, [=] (index<1> idx) restrict(amp)
 	{
 
@@ -785,7 +785,7 @@ void calcR2(float* zArray, int zArrayLengthX, int zArrayLengthY,
 	});
 	dataViewVisited.discard_data();	
 
-*/
+
 }
 
 
@@ -866,7 +866,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, ((e - lerpLOS)*d) + fast_math::fabsf(e));
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -906,7 +906,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, ((e - lerpLOS)*d) + fast_math::fabsf(e));
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -945,7 +945,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, ((e - lerpLOS)*d) + fast_math::fabsf(e));
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -985,7 +985,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, ((e - lerpLOS)*d) + fast_math::fabsf(e));
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -1033,7 +1033,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, ((e - lerpLOS)*d) + fast_math::fabsf(e));
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -1073,7 +1073,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, ((e - lerpLOS)*d) + fast_math::fabsf(e));
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 
@@ -1114,7 +1114,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, ((e - lerpLOS)*d) + fast_math::fabsf(e));
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -1154,7 +1154,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, ((e - lerpLOS)*d) + fast_math::fabsf(e));
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 
@@ -1224,7 +1224,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 	array_view<float,2> losArrayView(visibleArrayY, visibleArrayX, &losArray[0,0]);
 
 
-	//((e - lerpLOS)*d) + fast_math::fabsf(e);
+
 
 
 	int ringCounter = RING_COUNTER;//start 2 rings out
@@ -1281,7 +1281,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				if(e > lerpLOS)
 				{
-					dataViewVisible(interY, interX) = 1;
+					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
 				}
 				else
@@ -1316,7 +1316,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				if(e > lerpLOS)
 				{
-					dataViewVisible(interY, interX) = 1;
+					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
 				}
 				else
@@ -1350,7 +1350,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				if(e > lerpLOS)
 				{
-					dataViewVisible(interY, interX) = 1;
+					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
 				}
 				else
@@ -1384,7 +1384,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				if(e > lerpLOS)
 				{
-					dataViewVisible(interY, interX) = 1;
+					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
 				}
 				else
@@ -1432,7 +1432,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				if(e > lerpLOS)
 				{
-					dataViewVisible(interY, interX) = 1;
+					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
 				}
 				else
@@ -1467,7 +1467,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				if(e > lerpLOS)
 				{
-					dataViewVisible(interY, interX) = 1;
+					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
 				}
 				else
@@ -1502,7 +1502,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				if(e > lerpLOS)
 				{
-					dataViewVisible(interY, interX) = 1;
+					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
 				}
 				else
@@ -1537,7 +1537,7 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				if(e > lerpLOS)
 				{
-					dataViewVisible(interY, interX) = 1;
+					dataViewVisible(interY, interX) = ((e - lerpLOS)*d) + fast_math::fabsf(e);
 					losArrayView(interY, interX) = e;
 				}
 				else
