@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.20617.1 PREVIEW
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GPU_VIEWSHED", "GPU_VIEWSHED\GPU_VIEWSHED.csproj", "{A14366BC-355F-4599-B6E9-A054BC57F3DF}"
 	ProjectSection(ProjectDependencies) = postProject
 		{7EAD6EDF-98B3-4E28-99E4-1DE1965564FE} = {7EAD6EDF-98B3-4E28-99E4-1DE1965564FE}
@@ -41,8 +43,5 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
-	EndGlobalSection
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
 	EndGlobalSection
 EndGlobal
