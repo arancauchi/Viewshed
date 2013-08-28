@@ -256,12 +256,14 @@ namespace GPU_VIEWSHED
                 Trace.WriteLine("Focal x: " + globalCurrX + " focal y: " + globalCurrY + " focal z: " + globalCurrZ);
                 //callDDA();
                 //callR3();
-                //callR2();
-                calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
+                callR2();
+                //calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
                 
+                //callGPU(currX, currY, currZ, "DDA");
+                //callGPU(currX, currY, currZ, "R3");
+                //callGPU(currX, currY, currZ, "R2");
                 //callGPU(currX, currY, currZ, "XDRAW");
-
-
+                //callGPU(currX, currY, currZ, "XDRAW_OPTIM");
 
 
                 stopwatch.Stop();
@@ -1021,9 +1023,9 @@ namespace GPU_VIEWSHED
             //SE 
             destX = currX + (rasterHeight - (rasterHeight - currY));
             destY = 0;
-            if (destX <= 0)
+            if (destX >= rasterWidth)
             {
-                destY = rasterHeight - (rasterHeight + destX - 1);
+                destY = (destX - rasterWidth - 1);
                 destX = rasterWidth - 1;
             }
             preCalculateDDA(currX, currY, currZ, destX, destY);
