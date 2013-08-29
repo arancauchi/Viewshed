@@ -256,8 +256,8 @@ namespace GPU_VIEWSHED
                 Trace.WriteLine("Focal x: " + globalCurrX + " focal y: " + globalCurrY + " focal z: " + globalCurrZ);
                 //callDDA();
                 //callR3();
-                callR2();
-                //calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
+                //callR2();
+                calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
                 
                 //callGPU(currX, currY, currZ, "DDA");
                 //callGPU(currX, currY, currZ, "R3");
@@ -549,7 +549,7 @@ namespace GPU_VIEWSHED
                 //elevation check
                 if (elev > highest)
                 {
-                    visibleArrayCPU[(int)y, (int)x] = 1;
+                    visibleArrayCPU[(int)y, (int)x] += 1;
                     highest = elev;
                     losArray[(int)Math.Round(y), (int)Math.Round(x)] = elev;
                 }
@@ -986,7 +986,7 @@ namespace GPU_VIEWSHED
             int currX = fx;
             int currY = fy;
             int currZ = fz;
-            int ringCounter = 1;//start 2 rings out
+            int ringCounter = 1;
             int northNorthEastCounter = 1;
             int northNorthWestCounter = 1;
             int southSouthEastCounter = 1;
@@ -998,9 +998,9 @@ namespace GPU_VIEWSHED
             int westSouthWestCounter = 1;
 
             //Total size of the ring in X & Y
-            int maxRingY = Math.Max(rasterHeight - currY - 1, currY);
+            int maxRingY = Math.Max(rasterHeight - currY - 1, currY);//rename these
             int maxRingX = Math.Max(rasterWidth - currX - 1, currX);
-
+            maxRingY = Math.Max(maxRingY, maxRingX);
 
             // Precaculate the 8 compass points for use in losArray
             preCalculateDDA(currX, currY, currZ, currX, rasterHeight - 1);
@@ -1073,7 +1073,7 @@ namespace GPU_VIEWSHED
                 {
                     if (currY + ringCounter < rasterHeight)
                     {
-                        if (i <= northNorthEastCounter)//NNE
+                        if (i < northNorthEastCounter)//NNE
                         {
                             int interX = currX + i;
                             int interY = currY + ringCounter;
@@ -1103,21 +1103,21 @@ namespace GPU_VIEWSHED
 
 
                             // //elevation check
-                            if (e > lerpLOS)
-                            {
+                            //if (e > lerpLOS)
+                            //{
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                            }
-                            else
-                            {
+                            //}
+                            //else
+                            //{
                                 losArray[interY, interX] = lerpLOS;
-                            }
+                            //}
                         }
                         else if (i > northNorthEastCounter && i <= northNorthEastCounter + northNorthWestCounter)//NNW
                         {
                             int interX = currX - (i - northNorthEastCounter);
-                            int interY = currY + ringCounter;
+                            int interY = currY + ringCounter ;
 
                             int x1 = interX + 1;
                             int y1 = interY - 1;
@@ -1137,23 +1137,23 @@ namespace GPU_VIEWSHED
 
                             //float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-                            float lerpLOS = (losMax + losMin) / 2; 
+                            float lerpLOS = (losMax + losMin) / 2;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
 
 
-                            //elevation check
-                            if (e > lerpLOS)
-                            {
+                            // //elevation check
+                           // if (e > lerpLOS)
+                            //{
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                            }
-                            else
-                            {
+                           // }
+                           // else
+                            //{
                                 losArray[interY, interX] = lerpLOS;
-                            }
+                            //}
                         }
                     }
                     if (currY - ringCounter > 0)
@@ -1188,16 +1188,16 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                            if (e > lerpLOS)
-                            {
+                            //if (e > lerpLOS)
+                            //{
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                            }
-                            else
-                            {
+                           // }
+                           // else
+                           // {
                                 losArray[interY, interX] = lerpLOS;
-                            }
+                          //  }
                         }
                         else if (i >= northNorthEastCounter + northNorthWestCounter + southSouthWestCounter && i < northNorthEastCounter + northNorthWestCounter + southSouthWestCounter + southSouthEastCounter)//SSE
                         {
@@ -1229,16 +1229,16 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                            if (e > lerpLOS)
-                            {
+                           // if (e > lerpLOS)
+                           // {
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                            }
-                            else
-                            {
+                           // }
+                           // else
+                           // {
                                 losArray[interY, interX] = lerpLOS;
-                            }
+                           // }
 
                         }
                     }
@@ -1247,14 +1247,14 @@ namespace GPU_VIEWSHED
 
                 int xExtent = eastNorthEastCounter + eastSouthEastCounter + westNorthWestCounter + westSouthWestCounter + 1;
 
-                //Get CPU to calculate DDA compass points then send LOSARRAY to GPU
-                for (int i = 0; i < yExtent; i++)
+
+                for (int i = 0; i < xExtent; i++)
                 {
                     if (currX + ringCounter < rasterWidth - 1)
                     {
                         if (i < eastNorthEastCounter)//ENE
                         {
-                            int interY = currY + i + 1;
+                            int interY = currY + i;
                             int interX = currX + ringCounter;
 
                             int x1 = interX - 1;
@@ -1275,24 +1275,24 @@ namespace GPU_VIEWSHED
 
                             float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-                            float lerpLOS = (losMax + losMin) / 2; 
+                            float lerpLOS = (losMax + losMin) / 2;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
 
 
                             //elevation check
-                            if (e > lerpLOS)
-                            {
-                                visibleArrayCPU[interY, interX] += 1;
-                                losArray[interY, interX] = e;
-                            }
-                            else
-                            {
-                                losArray[interY, interX] = lerpLOS;
-                            }
+                            // if (e > lerpLOS)
+                            // {
+                            visibleArrayCPU[interY, interX] += 1;
+                            losArray[interY, interX] = e;
+                            // }
+                            // else
+                            // {
+                            losArray[interY, interX] = lerpLOS;
+                            // }
                         }
-                        else if (i > eastNorthEastCounter && i <= eastNorthEastCounter + eastSouthEastCounter && currX - ringCounter > 0)//WNW
+                        else if (i > eastNorthEastCounter && i <= eastNorthEastCounter + eastSouthEastCounter)//ESE
                         {
 
                             int interY = currY - (i - eastNorthEastCounter);
@@ -1316,29 +1316,28 @@ namespace GPU_VIEWSHED
 
                             //float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-                            float lerpLOS = (losMax + losMin) / 2; 
+                            float lerpLOS = (losMax + losMin) / 2;
 
                             float d = (float)Math.Sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
                             float e = ((zArrayFloat[interY, interX] - currZ) / d);
 
 
                             //elevation check
-                            if (e > lerpLOS)
-                            {
+                            //  if (e > lerpLOS)
+                            //  {
 
-                                visibleArrayCPU[interY, interX] += 1;
-                                losArray[interY, interX] = e;
-                            }
-                            else
-                            {
-                                losArray[interY, interX] = lerpLOS;
-                            }
+                            visibleArrayCPU[interY, interX] += 1;
+                            losArray[interY, interX] = e;
+                            // }
+                            // else
+                            // {
+                            losArray[interY, interX] = lerpLOS;
+                            //  }
                         }
                     }
                     if (currX - ringCounter > 0)
                     {
-                        if (i >= eastNorthEastCounter + eastSouthEastCounter && i <= eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter
-                        && currX - ringCounter > 0)//WSW
+                        if (i >= eastNorthEastCounter + eastSouthEastCounter && i <= eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter)//WSW
                         {
                             int interY = currY - (i - (eastNorthEastCounter + eastSouthEastCounter));
                             int interX = currX - ringCounter;
@@ -1368,19 +1367,19 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                            if (e > lerpLOS)
-                            {
+                           // if (e > lerpLOS)
+                           // {
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                            }
-                            else
-                            {
+                           // }
+                           // else
+                           // {
                                 losArray[interY, interX] = lerpLOS;
-                            }
+                           // }
                         }
                         if (i >= eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter
-                            && i <= eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter + westNorthWestCounter && currX - ringCounter > 0)//WNW
+                            && i <= eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter + westNorthWestCounter)//WNW
                         {
                             int interY = currY + (i - (eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter));
                             int interX = currX - ringCounter;
@@ -1401,7 +1400,6 @@ namespace GPU_VIEWSHED
 
                             //float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
 
-                            float losLerp = rightLos + (leftLos - rightLos) * (interX / (interY + 1));//does not work!!!l!l!!
 
                             float lerpLOS = (losMax + losMin) / 2; 
 
@@ -1410,16 +1408,16 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                            if (e > lerpLOS)
-                            {
+                            //if (e > lerpLOS)
+                            //{
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                            }
-                            else
-                            {
+                           // }
+                           // else
+                           // {
                                 losArray[interY, interX] = lerpLOS;
-                            }
+                          //  }
 
                         }
                     }
@@ -1427,37 +1425,36 @@ namespace GPU_VIEWSHED
                 }
 
 
-                //ALL THIS IS KINDA FUDGED, figure out real values
-                //If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
-                if (currY + northNorthEastCounter < rasterHeight - 1)
+                //If the westNorthWestCounter hasn't hit the Northern boundary of the DEM - CORRECT
+                if (currY + westNorthWestCounter < rasterHeight - 1)
                 {
                     eastNorthEastCounter++;
                     westNorthWestCounter++;
                 }
 
-                //If the northNorthWestCounter hasn't hit the Western boundary of the DEM
-                if (currY - northNorthWestCounter > 1)
+                //If the westSouthWestCounter hasn't hit the Southern boundary of the DEM - CORRECT
+                if (currY - westSouthWestCounter > 1)
                 {
-                    eastSouthEastCounter++;
                     westSouthWestCounter++;
+                    eastSouthEastCounter++;
+ 
                 }
 
-
-
-                //If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
+                //If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM - CORRECT
                 if (currX + northNorthEastCounter < rasterWidth - 1)
                 {
                     northNorthEastCounter++;
                     southSouthEastCounter++;
                 }
 
-                //If the northNorthWestCounter hasn't hit the Western boundary of the DEM
+                //If the northNorthWestCounter hasn't hit the Western boundary of the DEM - CORRECT
                 if (currX - northNorthWestCounter > 1)
                 {
                     northNorthWestCounter++;
                     southSouthWestCounter++;
                 }
 
+                 
 
 
                 ringCounter++;
