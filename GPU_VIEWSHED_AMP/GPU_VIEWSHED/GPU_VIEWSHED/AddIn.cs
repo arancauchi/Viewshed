@@ -113,10 +113,10 @@ namespace GPU_VIEWSHED
 
 
             _stack = new Stack<FocalPointStruct>();
-            _stack.Push(new FocalPointStruct(276, 440, 230));
-            _stack.Push(new FocalPointStruct(615, 440, 243));
-            _stack.Push(new FocalPointStruct(464, 266, 1430));
-            
+            //_stack.Push(new FocalPointStruct(276, 440, 230));
+            //_stack.Push(new FocalPointStruct(615, 440, 243));
+            //_stack.Push(new FocalPointStruct(464, 266, 1430));
+
 
 
 
@@ -244,37 +244,103 @@ namespace GPU_VIEWSHED
 
             vp = new VisiblePoints();
 
-                stopwatch.Reset();
-                stopwatch.Start();
-             
-
-                //threadCPU.Start();
-                //threadGPU.Start();
-                //threadCPU.Join();//needs join as the code will send back results without it
-                //threadGPU.Join();
-
-                Trace.WriteLine("Focal x: " + globalCurrX + " focal y: " + globalCurrY + " focal z: " + globalCurrZ);
-                //callDDA();
-                //callR3();
-                //callR2();
-                calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
-                
-                //callGPU(currX, currY, currZ, "DDA");
-                //callGPU(currX, currY, currZ, "R3");
-                //callGPU(currX, currY, currZ, "R2");
-                //callGPU(currX, currY, currZ, "XDRAW");
-                //callGPU(currX, currY, currZ, "XDRAW_OPTIM");
+            stopwatch.Reset();
+            stopwatch.Start();
 
 
-                stopwatch.Stop();
-                TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
-                Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
+            //threadCPU.Start();
+            //threadGPU.Start();
+            //threadCPU.Join();//needs join as the code will send back results without it
+            //threadGPU.Join();
 
-                //  Copy Visible values from local array to Eon structures.
-                TraceEvent("Sending raster", application);
-                Trace.WriteLine("Sending raster");
+            Trace.WriteLine("Focal x: " + globalCurrX + " focal y: " + globalCurrY + " focal z: " + globalCurrZ);
+            callR3();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callR3();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callR3();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callR3();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callR3();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callDDA();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callDDA();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callDDA();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callDDA();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callDDA();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callR2();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callR2();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callR2();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callR2();
+            stopwatch.Reset();
+            stopwatch.Start();
+            callR2();
+            stopwatch.Reset();
+            stopwatch.Start();
+
+            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
             
+            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
+            stopwatch.Reset();
+            stopwatch.Start();
+            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
             
+            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
+            stopwatch.Reset();
+            stopwatch.Start();
+            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
+            
+            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
+            stopwatch.Reset();
+            stopwatch.Start();
+            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
+            
+            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
+            stopwatch.Reset();
+            stopwatch.Start();
+
+            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
+            stopwatch.Reset();
+            stopwatch.Start();
+
+            //callGPU(currX, currY, currZ, "DDA");
+            //callGPU(currX, currY, currZ, "R3");
+            //callGPU(currX, currY, currZ, "R2");
+            //callGPU(currX, currY, currZ, "XDRAW");
+            //callGPU(currX, currY, currZ, "XDRAW_OPTIM");
+
+
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
+
+            //  Copy Visible values from local array to Eon structures.
+            TraceEvent("Sending raster", application);
+            Trace.WriteLine("Sending raster");
+
+
 
             demHelper.ProcessVertexWindow2D(0, 0, rasterWidth, rasterHeight, delegate(int rasterIndex, int[] rasterTileOfs, int windowIndexOfs, int[] windowOfs, int spanSize)
             {
@@ -284,10 +350,10 @@ namespace GPU_VIEWSHED
                 for (int i = 0; i < spanSize; ++i)
                 {
                     demVertexTable[rasterIndex + i].VisibleInt = visibleArrayCPU[windowOfsY, windowOfsX + i] + visibleArrayInt[windowOfsY, windowOfsX + i];
-                    if (visibleArrayCPU[windowOfsY, windowOfsX + i] + visibleArrayInt[windowOfsY, windowOfsX + i] > 0)
-                    {
-                        vp.setVisiblePoints(1);
-                    }
+                  //  if (visibleArrayCPU[windowOfsY, windowOfsX + i] + visibleArrayInt[windowOfsY, windowOfsX + i] > 0)
+                    //{
+                      //  vp.setVisiblePoints(1);
+                    //}
 
                 }
             });
@@ -986,7 +1052,7 @@ namespace GPU_VIEWSHED
             int currX = fx;
             int currY = fy;
             int currZ = fz;
-            int ringCounter = 1;
+            int ringCounter = 0;
             int northNorthEastCounter = 1;
             int northNorthWestCounter = 1;
             int southSouthEastCounter = 1;
@@ -1073,9 +1139,9 @@ namespace GPU_VIEWSHED
                 {
                     if (currY + ringCounter < rasterHeight)
                     {
-                        if (i < northNorthEastCounter)//NNE
+                        if (i <= northNorthEastCounter)//NNE
                         {
-                            int interX = currX + i;
+                            int interX = currX + i ;
                             int interY = currY + ringCounter;
 
                             int x1 = interX - 1;
@@ -1103,16 +1169,16 @@ namespace GPU_VIEWSHED
 
 
                             // //elevation check
-                            //if (e > lerpLOS)
-                            //{
+                            if (e > lerpLOS)
+                            {
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                            //}
-                            //else
-                            //{
+                            }
+                            else
+                            {
                                 losArray[interY, interX] = lerpLOS;
-                            //}
+                            }
                         }
                         else if (i > northNorthEastCounter && i <= northNorthEastCounter + northNorthWestCounter)//NNW
                         {
@@ -1144,24 +1210,24 @@ namespace GPU_VIEWSHED
 
 
                             // //elevation check
-                           // if (e > lerpLOS)
-                            //{
+                            if (e > lerpLOS)
+                            {
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                           // }
-                           // else
-                            //{
+                            }
+                            else
+                            {
                                 losArray[interY, interX] = lerpLOS;
-                            //}
+                            }
                         }
                     }
                     if (currY - ringCounter > 0)
                     {
-                        if (i >= northNorthEastCounter + northNorthWestCounter && i <= northNorthEastCounter + northNorthWestCounter + southSouthWestCounter)//SSW
+                        if (i > northNorthEastCounter + northNorthWestCounter && i <= northNorthEastCounter + northNorthWestCounter + southSouthWestCounter)//SSW
                         {
                             int interX = currX - (i - (northNorthEastCounter + northNorthWestCounter));
-                            int interY = currY - ringCounter;
+                            int interY = currY - ringCounter - 1;
 
                             int x1 = interX + 1;
                             int y1 = interY + 1;
@@ -1188,18 +1254,18 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                            //if (e > lerpLOS)
-                            //{
+                            if (e > lerpLOS)
+                            {
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                           // }
-                           // else
-                           // {
+                            }
+                            else
+                            {
                                 losArray[interY, interX] = lerpLOS;
-                          //  }
+                            }
                         }
-                        else if (i >= northNorthEastCounter + northNorthWestCounter + southSouthWestCounter && i < northNorthEastCounter + northNorthWestCounter + southSouthWestCounter + southSouthEastCounter)//SSE
+                        else if (i > northNorthEastCounter + northNorthWestCounter + southSouthWestCounter && i < northNorthEastCounter + northNorthWestCounter + southSouthWestCounter + southSouthEastCounter)//SSE
                         {
                             int interX = currX + (i - (northNorthEastCounter + northNorthWestCounter + southSouthWestCounter));
                             int interY = currY - ringCounter;
@@ -1229,16 +1295,16 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                           // if (e > lerpLOS)
-                           // {
+                            if (e > lerpLOS)
+                            {
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                           // }
-                           // else
-                           // {
+                            }
+                            else
+                            {
                                 losArray[interY, interX] = lerpLOS;
-                           // }
+                            }
 
                         }
                     }
@@ -1282,15 +1348,15 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                            // if (e > lerpLOS)
-                            // {
+                             if (e > lerpLOS)
+                             {
                             visibleArrayCPU[interY, interX] += 1;
                             losArray[interY, interX] = e;
-                            // }
-                            // else
-                            // {
+                             }
+                             else
+                             {
                             losArray[interY, interX] = lerpLOS;
-                            // }
+                             }
                         }
                         else if (i > eastNorthEastCounter && i <= eastNorthEastCounter + eastSouthEastCounter)//ESE
                         {
@@ -1323,16 +1389,16 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                            //  if (e > lerpLOS)
-                            //  {
+                              if (e > lerpLOS)
+                              {
 
                             visibleArrayCPU[interY, interX] += 1;
                             losArray[interY, interX] = e;
-                            // }
-                            // else
-                            // {
+                             }
+                             else
+                             {
                             losArray[interY, interX] = lerpLOS;
-                            //  }
+                              }
                         }
                     }
                     if (currX - ringCounter > 0)
@@ -1367,16 +1433,16 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                           // if (e > lerpLOS)
-                           // {
+                            if (e > lerpLOS)
+                            {
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                           // }
-                           // else
-                           // {
+                            }
+                            else
+                            {
                                 losArray[interY, interX] = lerpLOS;
-                           // }
+                            }
                         }
                         if (i >= eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter
                             && i <= eastNorthEastCounter + eastSouthEastCounter + westSouthWestCounter + westNorthWestCounter)//WNW
@@ -1408,16 +1474,16 @@ namespace GPU_VIEWSHED
 
 
                             //elevation check
-                            //if (e > lerpLOS)
-                            //{
+                           if (e > lerpLOS)
+                           {
 
                                 visibleArrayCPU[interY, interX] += 1;
                                 losArray[interY, interX] = e;
-                           // }
-                           // else
-                           // {
+                            }
+                            else
+                            {
                                 losArray[interY, interX] = lerpLOS;
-                          //  }
+                            }
 
                         }
                     }
