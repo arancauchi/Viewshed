@@ -254,83 +254,12 @@ namespace GPU_VIEWSHED
             //threadGPU.Join();
 
             Trace.WriteLine("Focal x: " + globalCurrX + " focal y: " + globalCurrY + " focal z: " + globalCurrZ);
-            callR3();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR3();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR3();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR3();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR3();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callDDA();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callDDA();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callDDA();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callDDA();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callDDA();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR2();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR2();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR2();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR2();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR2();
-            stopwatch.Reset();
-            stopwatch.Start();
 
-            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
-            
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
-            stopwatch.Reset();
-            stopwatch.Start();
-            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
-            
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
-            stopwatch.Reset();
-            stopwatch.Start();
-            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
-            
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
-            stopwatch.Reset();
-            stopwatch.Start();
-            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
-            
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
-            stopwatch.Reset();
-            stopwatch.Start();
 
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
-            stopwatch.Reset();
-            stopwatch.Start();
-
-            //callGPU(currX, currY, currZ, "DDA");
-            //callGPU(currX, currY, currZ, "R3");
+            callGPU(currX, currY, currZ, "DDA");
+            callGPU(currX, currY, currZ, "R3");
             //callGPU(currX, currY, currZ, "R2");
-            //callGPU(currX, currY, currZ, "XDRAW");
-            //callGPU(currX, currY, currZ, "XDRAW_OPTIM");
-
+            callGPU(currX, currY, currZ, "XDRAW");
 
             stopwatch.Stop();
             TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
