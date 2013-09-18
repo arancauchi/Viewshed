@@ -269,18 +269,18 @@ namespace GPU_VIEWSHED
                 stopwatch.Start();
 
 
-                //threadCPU.Start();
-                //threadGPU.Start();
+                threadCPU.Start();
+                threadGPU.Start();
 
 
                 //callDDA();
                 //callR3();
                 //callR2();
-                calculateXDRAW(currX,currY,currZ);
+                //calculateXDRAW(currX,currY,currZ);
                 //callGPU(currX, currY, currZ, "R2");
 
-                //threadCPU.Join();//needs join as the code will send back results without it
-                //threadGPU.Join();
+                threadCPU.Join();//needs join as the code will send back results without it
+                threadGPU.Join();
 
 
                 stopwatch.Stop();
