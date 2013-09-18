@@ -866,7 +866,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) += fast_math::fmaxf(0.0f, 1.0f);
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -906,7 +906,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) += fast_math::fmaxf(0.0f, 1.0f);
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -945,7 +945,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) += fast_math::fmaxf(0.0f, 1.0f);
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -985,7 +985,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) += fast_math::fmaxf(0.0f, 1.0f);
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -1033,7 +1033,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) += fast_math::fmaxf(0.0f, 1.0f);
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -1073,7 +1073,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) += fast_math::fmaxf(0.0f, 1.0f);
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 
@@ -1114,7 +1114,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) += fast_math::fmaxf(0.0f, 1.0f);
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 			}
@@ -1154,7 +1154,7 @@ void calcXdrawOptim(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float e = ((los[idx.local[0]][1] - currZ) / d);
 
 
-				dataViewVisible(interY, interX) = fast_math::fmaxf(0.0f, 1.0f);
+				dataViewVisible(interY, interX) += fast_math::fmaxf(0.0f, 1.0f);
 
 				losArrayView(interY, interX) = fast_math::fmaxf(e, lerpLOS);
 
@@ -1271,9 +1271,9 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 				//float lerpLOS =  (rightLos - leftLos) * fast_math::fabs(rightLos - losLerpX);
 
-				float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+				//float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-				float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+				float lerpLOS = (losMin + losMax) / 2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -1306,9 +1306,9 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float losMax = fast_math::fmaxf(leftLos, rightLos);
 				float losMin = fast_math::fminf(leftLos, rightLos);
 
-				float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+				//float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-				float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+				float lerpLOS = (losMin + losMax) / 2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -1340,9 +1340,9 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float losMax = fast_math::fmaxf(leftLos, rightLos);
 				float losMin = fast_math::fminf(leftLos, rightLos);
 
-				float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+				//float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-				float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+				float lerpLOS = (losMin + losMax) / 2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -1374,9 +1374,9 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float losMax = fast_math::fmaxf(leftLos, rightLos);
 				float losMin = fast_math::fminf(leftLos, rightLos);
 
-				float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+				//float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-				float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+				float lerpLOS = (losMin + losMax) / 2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -1422,9 +1422,9 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float losMax = fast_math::fmaxf(leftLos, rightLos);
 				float losMin = fast_math::fminf(leftLos, rightLos);
 
-				float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+				//float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-				float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+				float lerpLOS = (losMin + losMax) / 2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -1457,9 +1457,9 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float losMax = fast_math::fmaxf(leftLos, rightLos);
 				float losMin = fast_math::fminf(leftLos, rightLos);
 
-				float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+				//float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-				float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+				float lerpLOS = (losMin + losMax) / 2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -1492,9 +1492,9 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float losMax = fast_math::fmaxf(leftLos, rightLos);
 				float losMin = fast_math::fminf(leftLos, rightLos);
 
-				float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+				//float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-				float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+				float lerpLOS = (losMin + losMax) / 2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -1527,9 +1527,9 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 				float losMax = fast_math::fmaxf(leftLos, rightLos);
 				float losMin = fast_math::fminf(leftLos, rightLos);
 
-				float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
+				//float losLerp = rightLos + (leftLos - rightLos) * (interX / interY);//does not work!!!l!l!!
 
-				float lerpLOS = (losMin + (leftLos + rightLos) / 2) / 2;
+				float lerpLOS = (losMin + losMax) / 2;
 
 				float d = fast_math::sqrt((interX - currX) * (interX - currX) + (interY - currY) * (interY - currY));
 				float e = ((dataViewZ(interY, interX) - currZ) / d);
@@ -1553,37 +1553,34 @@ void calcXdraw(float* zArray, int zArrayLengthX, int zArrayLengthY,
 
 
 
-		//ALL THIS IS KINDA FUDGED, figure out real values
-		//If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
-		if (currY + northNorthEastCounter < rasterHeight)
+		//If the westNorthWestCounter hasn't hit the Northern boundary of the DEM - CORRECT
+		if (currY + westNorthWestCounter < rasterHeight - 1)
 		{
 			eastNorthEastCounter++;
 			westNorthWestCounter++;
 		}
 
-		//If the northNorthWestCounter hasn't hit the Western boundary of the DEM
-		if (currY - northNorthWestCounter > 0)
+		//If the westSouthWestCounter hasn't hit the Southern boundary of the DEM - CORRECT
+		if (currY - westSouthWestCounter > 1)
 		{
-			eastSouthEastCounter++;
 			westSouthWestCounter++;
+			eastSouthEastCounter++;
+
 		}
 
-
-
-		//If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM
-		if (currX + northNorthEastCounter < rasterWidth)
+		//If the northNorthEastCounter hasn't hit the Eastern boundary of the DEM - CORRECT
+		if (currX + northNorthEastCounter < rasterWidth - 1)
 		{
 			northNorthEastCounter++;
 			southSouthEastCounter++;
 		}
 
-		//If the northNorthWestCounter hasn't hit the Western boundary of the DEM
-		if (currX - northNorthWestCounter > 0)
+		//If the northNorthWestCounter hasn't hit the Western boundary of the DEM - CORRECT
+		if (currX - northNorthWestCounter > 1)
 		{
 			northNorthWestCounter++;
 			southSouthWestCounter++;
 		}
-
 
 
 		ringCounter++;
@@ -1606,7 +1603,7 @@ extern "C" __declspec (dllexport)
 
 	if (gpuType == XDRAW)
 	{
-		calcXdrawOptim(zArray, zArrayLengthX, zArrayLengthY, visibleArray, visibleArrayX,
+		calcXdraw(zArray, zArrayLengthX, zArrayLengthY, visibleArray, visibleArrayX,
 			visibleArrayY, currX, currY, currZ, rasterWidth, rasterHeight, losArray);
 	}
 	else if (gpuType == DDA)
