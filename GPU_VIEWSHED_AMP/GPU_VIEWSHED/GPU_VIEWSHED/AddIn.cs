@@ -244,6 +244,8 @@ namespace GPU_VIEWSHED
 
             vp = new VisiblePoints();
 
+            
+
             stopwatch.Reset();
             stopwatch.Start();
 
@@ -254,87 +256,126 @@ namespace GPU_VIEWSHED
             //threadGPU.Join();
 
             Trace.WriteLine("Focal x: " + globalCurrX + " focal y: " + globalCurrY + " focal z: " + globalCurrZ);
-            callR3();
+
+            callGPU(currX, currY, currZ, "R3");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callR3();
+            callGPU(currX, currY, currZ, "R3");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callR3();
+            callGPU(currX, currY, currZ, "R3");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callR3();
+            callGPU(currX, currY, currZ, "R3");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callR3();
+            callGPU(currX, currY, currZ, "R3");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callDDA();
+            callGPU(currX, currY, currZ, "R3");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callDDA();
+            callGPU(currX, currY, currZ, "DDA");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callDDA();
+            callGPU(currX, currY, currZ, "DDA");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callDDA();
+            callGPU(currX, currY, currZ, "DDA");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callDDA();
+            callGPU(currX, currY, currZ, "DDA");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callR2();
+            callGPU(currX, currY, currZ, "DDA");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            callR2();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR2();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR2();
-            stopwatch.Reset();
-            stopwatch.Start();
-            callR2();
+            callGPU(currX, currY, currZ, "DDA");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
 
-            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
-            
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
+            callGPU(currX, currY, currZ, "XDRAW");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
-            
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
+            callGPU(currX, currY, currZ, "XDRAW");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
-            
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
+            callGPU(currX, currY, currZ, "XDRAW");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
-            calculateXDRAW(globalCurrX, globalCurrY, globalCurrZ);
-            
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
+            callGPU(currX, currY, currZ, "XDRAW");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
             stopwatch.Reset();
             stopwatch.Start();
+            callGPU(currX, currY, currZ, "XDRAW");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
+            stopwatch.Reset();
+            stopwatch.Start();
+            callGPU(currX, currY, currZ, "XDRAW");
+            stopwatch.Stop();
+            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
+            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
+            stopwatch.Reset();
 
-            Trace.WriteLine("Time elapsed Xdraw: " + stopwatch.Elapsed);
-            stopwatch.Reset();
-            stopwatch.Start();
 
-            //callGPU(currX, currY, currZ, "DDA");
+
+
             //callGPU(currX, currY, currZ, "R3");
             //callGPU(currX, currY, currZ, "R2");
             //callGPU(currX, currY, currZ, "XDRAW");
             //callGPU(currX, currY, currZ, "XDRAW_OPTIM");
 
 
-            stopwatch.Stop();
-            TraceEvent("Total Time elapsed using" + viewshedType + " : " + stopwatch.Elapsed, application);
-            Trace.WriteLine("Total Time elapsed using " + viewshedType + " : " + stopwatch.Elapsed);
+
 
             //  Copy Visible values from local array to Eon structures.
             TraceEvent("Sending raster", application);
